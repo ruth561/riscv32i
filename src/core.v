@@ -8,7 +8,14 @@ module core (
 );
 
     reg [31:0] pc;
-    wire [31:0] regs [0:31];
+    // for debug
+    output [31:0]   debug_ra;
+    output [31:0]   debug_sp;
+    output [31:0]   debug_t0;
+    output [31:0]   debug_t1;
+    output [31:0]   debug_t2;
+    output [31:0]   debug_a0;
+    output [31:0]   debug_a1;
 
     reg [31:0] imem [0:15]; // instruction memory
     /** TODO: データは１バイトずつにしたほうがいい */
@@ -20,7 +27,7 @@ module core (
     // pipeline registers between ID and EX 
     reg [31:0]  id_ex_rs1;
     reg [31:0]  id_ex_rs2;
-    reg [ 4:0]  id_ex_rd;
+    reg [ 4:0]  id_ex_rd_addr;
     reg         id_ex_branch;
     reg         id_ex_mem_read;
     reg         id_ex_mem_write;
@@ -42,17 +49,23 @@ module core (
     // pipeline registers between EX and MEM
     reg         ex_mem_zero; 
     reg [31:0]  ex_mem_result;
+    reg [31:0]  ex_mem_write_data;
     reg         ex_mem_branch;
     reg         ex_mem_mem_read;
     reg         ex_mem_reg_write;
     reg         ex_mem_mem_write;
+    reg [ 4:0]  ex_mem_rd_addr;
 
     wire        ex_zero;
     wire [31:0] ex_result;
 
     // pipeline registers between MEM and WB
-    reg [31:0]  mem_wb_ir;
+    reg [ 4:0]  mem_wb_rd_addr;
     reg [31:0]  mem_wb_data;
+
+    // wires
+    wire [ 4:0] rd_addr;
+    wire [31:0] rd_value;
 
     //-------------------------------------------------
     // STAGE 1 (IF)
@@ -79,23 +92,30 @@ module core (
         .imm        (id_imm)
     );
     
-    reg [ 4:0] zero5  = 0;
-    reg [31:0] zero32 = 0;
     regfile regfile (
         .clock      (clock), 
         .reset      (reset),
         .rs1_addr   (if_id_instr[19:15]), 
         .rs2_addr   (if_id_instr[24:20]),
-        .rd_addr    (zero5),
-        .w_val      (zero32),
+        .rd_addr    (rd_addr),  // from WB stage
+        .w_val      (rd_value), // from WB stage
 
         .rs1_val    (id_rs1),
-        .rs2_val    (id_rs2)
+        .rs2_val    (id_rs2),
+
+        .debug_ra   (debug_ra),
+        .debug_sp   (debug_sp),
+        .debug_t0   (debug_t0),
+        .debug_t1   (debug_t1),
+        .debug_t2   (debug_t2),
+        .debug_a0   (debug_a0),
+        .debug_a1   (debug_a1)
     );
 
     always @(posedge clock) begin
         id_ex_rs1       <= id_rs1;
         id_ex_rs2       <= id_rs2;
+        id_ex_rd_addr   <= if_id_instr[11:7];
         id_ex_branch    <= id_branch;
         id_ex_mem_read  <= id_mem_read;
         id_ex_mem_write <= id_mem_write;
@@ -120,34 +140,61 @@ module core (
     always @(posedge clock) begin
         ex_mem_zero         <= ex_zero;
         ex_mem_result       <= ex_result;
+        ex_mem_write_data   <= id_ex_rs2;
         ex_mem_branch       <= id_ex_branch;
         ex_mem_mem_read     <= id_ex_mem_read;
         ex_mem_mem_write    <= id_ex_mem_write; 
         ex_mem_reg_write    <= id_ex_reg_write; 
+        ex_mem_rd_addr      <= id_ex_rd_addr;
     end
 
     //-------------------------------------------------
     // STAGE 4 (MEM)
     //-------------------------------------------------
-    /* 
-    ここは改変するつもり
+    always @(posedge clock) begin // write to memory
+        if (ex_mem_mem_write) begin // WORD only
+            dmem[ex_mem_result]     <= ex_mem_write_data[ 7: 0];
+            dmem[ex_mem_result + 1] <= ex_mem_write_data[15: 8];
+            dmem[ex_mem_result + 2] <= ex_mem_write_data[23:16];
+            dmem[ex_mem_result + 3] <= ex_mem_write_data[31:24];
+        end
+    end
+
     always @(posedge clock) begin
-        mem_wb_ir   <= ex_mem_ir;
-        case (ex_mem_ir[6:0])
-            LW: mem_wb_data <= dmem[ex_mem_value >> 2]; // data from data memory
-            SW: dmem[ex_mem_value >> 2]  <= ex_mem_rs2; // write rs2 in dmem.
-            OP: mem_wb_data <= ex_mem_value;
-            OP_IMM: mem_wb_data <= ex_mem_value;
-        endcase
-    end */
+        if (ex_mem_reg_write) begin
+            mem_wb_rd_addr  <= ex_mem_rd_addr;
+            case (ex_mem_mem_read)
+                `TRUE:  mem_wb_data     <= dmem[ex_mem_result];
+                `FALSE: mem_wb_data     <= ex_mem_result;
+            endcase
+        end else begin // write to x0, meaning not writing.
+            mem_wb_rd_addr  <= 5'b0;
+            mem_wb_data     <= 32'b0;
+        end
+    end
         
     //-------------------------------------------------
     // STAGE 5 (WB)
     //-------------------------------------------------
+    assign rd_addr  = mem_wb_rd_addr;
+    assign rd_value = mem_wb_data;
 
+
+    //-------------------------------------------------
+    // FOR DEBUG
+    //-------------------------------------------------
     always @(posedge clock) begin // debug
         // timing is shifted from PC increment
         $display("-----");
+        $display("pc  : %x --> %b (%x)", pc, imem[pc >> 2], imem[pc >> 2]);
+        $display("ra  : %x", debug_ra);
+        $display("sp  : %x", debug_sp);
+        $display("t0  : %x", debug_t0);
+        $display("t1  : %x", debug_t1);
+        $display("t2  : %x", debug_t2);
+        $display("a0  : %x", debug_a0);
+        $display("a1  : %x", debug_a1);
+        $display("");
         $display("[data memory dump]");
         $display("0000: %x %x %x %x %x %x %x %x", 
             dmem[0], dmem[1], dmem[2], dmem[3], dmem[4], dmem[5], dmem[6], dmem[7]);

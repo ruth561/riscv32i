@@ -8,13 +8,31 @@ module regfile (
     input  [31:0]   w_val, 
 
     output [31:0]   rs1_val, 
-    output [31:0]   rs2_val
+    output [31:0]   rs2_val,
+
+    // for debug
+    output [31:0]   debug_ra, 
+    output [31:0]   debug_sp, 
+    output [31:0]   debug_t0, 
+    output [31:0]   debug_t1, 
+    output [31:0]   debug_t2, 
+    output [31:0]   debug_a0, 
+    output [31:0]   debug_a1
 );
 
     reg [31:0] regs [0:31];
 
     assign rs1_val = (rs1_addr == 5'b0) ? 32'b0 : regs[rs1_addr];
     assign rs2_val = (rs2_addr == 5'b0) ? 32'b0 : regs[rs2_addr];
+
+    // for debug
+    assign debug_ra = regs[1];
+    assign debug_sp = regs[2];
+    assign debug_t0 = regs[5];
+    assign debug_t1 = regs[6];
+    assign debug_t2 = regs[7];
+    assign debug_a0 = regs[10];
+    assign debug_a1 = regs[11];
 
     // If reset is asserted, all registers are 0-cleared.
     // If it isn't, write back is always done. 
@@ -92,10 +110,13 @@ module regfile (
     end
 
     // set instructions in imem.
-    reg [31:0] i;
+    reg [31:0] i, n;
     initial begin
         // initialize for debug
-        for (i = 0; i < 32; i++) regs[i] = i;
+        for (i = 0; i < 32; i++) begin
+            n = i + (i << 8) + (i << 16) + (i << 24);
+            regs[i] = n;
+        end
     end
 
 endmodule

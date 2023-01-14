@@ -7,7 +7,7 @@
     .text
     .global main
 main:
-    add     a0, a0, a0
+    sw      t0, 3(zero)
     xor     t0, t0, t0
     xor     t1, t1, t1
     addi    t0, t0, 0

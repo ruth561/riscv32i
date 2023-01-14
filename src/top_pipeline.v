@@ -19,6 +19,7 @@ module top_pipeline;
         $dumpfile("build/dump.vcd");
         $dumpvars(0, top_pipeline);
         clock = 1'b0;
+        reset = 1'b0;
         #36 $finish;
     end
 endmodule
