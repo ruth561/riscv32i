@@ -6,7 +6,7 @@ module riscv32i (clock, reset);
     parameter SW    = 7'b0100011; // sw rs2, offset(rs1)
     parameter OP    = 7'b0110011; // for example, add, sub, etc..
     parameter OP_IMM    = 7'b0010011; // for example, addi, subi, etc..
-    parameter BRANCH    = 7'b1100011;
+    parameter BRANCH    = 7'b1100011; // Type-B
 
     // R-type funct field ({funct7, funct3})
     parameter FUNCT_ADD = 10'b0000000000;
@@ -29,6 +29,13 @@ module riscv32i (clock, reset);
     parameter FUNCT_SRI  = 3'b101;
     parameter FUNCT_SLTI = 3'b010;
     parameter FUNCT_SLTIU= 3'b011;
+
+    parameter BRANCH_FUNCT_BEQ  = 3'b000;
+    parameter BRANCH_FUNCT_BNE  = 3'b001;
+    parameter BRANCH_FUNCT_BLT  = 3'b100;
+    parameter BRANCH_FUNCT_BGE  = 3'b101;
+    parameter BRANCH_FUNCT_BLTU = 3'b110;
+    parameter BRANCH_FUNCT_BGEU = 3'b111;
 
     reg [31:0] pc;
     reg [31:0] regs [0:31]; // registers file

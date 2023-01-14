@@ -7,14 +7,14 @@
     .text
     .global main
 main:
-    nop
-    nop
     add     a0, a0, a0
     xor     t0, t0, t0
     xor     t1, t1, t1
     addi    t0, t0, 0
     addi    t1, t1, -1
     sltiu   t2, t1, 5
+    lw      t3, 0x123(t0)
+    sw      t3, 0x234(t0)
     nop    
     nop    
     nop    
@@ -23,4 +23,3 @@ main:
     nop    
     nop    
     nop    
-
