@@ -22,9 +22,11 @@ module core (
     reg [7:0] dmem [0:63]; // data memory
 
     // pipeline registers between IF and ID 
+    reg [31:0]  if_id_pc;
     reg [31:0]  if_id_instr;
 
     // pipeline registers between ID and EX 
+    reg [31:0]  id_ex_pc;
     reg [31:0]  id_ex_rs1;
     reg [31:0]  id_ex_rs2;
     reg [ 4:0]  id_ex_rd_addr;
@@ -36,6 +38,7 @@ module core (
     reg         id_ex_reg_write;
     reg [31:0]  id_ex_imm;
 
+    // wires from decode stage
     wire [31:0] id_rs1;
     wire [31:0] id_rs2;
     wire        id_branch;
@@ -47,7 +50,7 @@ module core (
     wire [31:0] id_imm;
 
     // pipeline registers between EX and MEM
-    reg         ex_mem_zero; 
+    reg [31:0]  ex_mem_branch_addr;
     reg [31:0]  ex_mem_result;
     reg [31:0]  ex_mem_write_data;
     reg         ex_mem_branch;
@@ -56,12 +59,15 @@ module core (
     reg         ex_mem_mem_write;
     reg [ 4:0]  ex_mem_rd_addr;
 
-    wire        ex_zero;
+    // wire from execute stage
     wire [31:0] ex_result;
 
     // pipeline registers between MEM and WB
     reg [ 4:0]  mem_wb_rd_addr;
     reg [31:0]  mem_wb_data;
+
+    // wire from memory stage
+    wire        pc_src;     // branch if true
 
     // wires
     wire [ 4:0] rd_addr;
@@ -71,8 +77,11 @@ module core (
     // STAGE 1 (IF)
     //-------------------------------------------------
     always @(posedge clock) begin
-        pc          <= pc + 4;
+        if_id_pc    <= pc;
         if_id_instr <= imem[pc >> 2];
+
+        if (pc_src) pc <= ex_mem_branch_addr;
+        else        pc <= pc + 4;
     end
 
     //-------------------------------------------------
@@ -113,6 +122,7 @@ module core (
     );
 
     always @(posedge clock) begin
+        id_ex_pc        <= if_id_pc;
         id_ex_rs1       <= id_rs1;
         id_ex_rs2       <= id_rs2;
         id_ex_rd_addr   <= if_id_instr[11:7];
@@ -133,12 +143,11 @@ module core (
         .src1       (id_ex_rs1),
         .src2       (id_ex_alu_src ? id_ex_imm : id_ex_rs2),
 
-        .zero       (ex_zero),
         .result     (ex_result)
     );
 
     always @(posedge clock) begin
-        ex_mem_zero         <= ex_zero;
+        ex_mem_branch_addr  <= id_ex_pc + id_ex_imm;
         ex_mem_result       <= ex_result;
         ex_mem_write_data   <= id_ex_rs2;
         ex_mem_branch       <= id_ex_branch;
@@ -172,6 +181,8 @@ module core (
             mem_wb_data     <= 32'b0;
         end
     end
+
+    assign pc_src = ex_mem_branch && ex_mem_result;
         
     //-------------------------------------------------
     // STAGE 5 (WB)
@@ -183,9 +194,10 @@ module core (
     //-------------------------------------------------
     // FOR DEBUG
     //-------------------------------------------------
+    reg [7:0] timer;
     always @(posedge clock) begin // debug
         // timing is shifted from PC increment
-        $display("-----");
+        $display("----- %d -----", timer);
         $display("pc  : %x --> %b (%x)", pc, imem[pc >> 2], imem[pc >> 2]);
         $display("ra  : %x", debug_ra);
         $display("sp  : %x", debug_sp);
@@ -200,11 +212,13 @@ module core (
             dmem[0], dmem[1], dmem[2], dmem[3], dmem[4], dmem[5], dmem[6], dmem[7]);
         $display("0008: %x %x %x %x %x %x %x %x", 
             dmem[8], dmem[9], dmem[10], dmem[11], dmem[12], dmem[13], dmem[14], dmem[15]);
+        timer = timer + 1;
     end
 
     // for test bench
     initial begin
         pc = 32'h0;
+        timer = 0;
 
         // TODO データメモリ用の読み込みデータも作る
         $readmemh("build/testd.txt", dmem);

@@ -5,7 +5,6 @@ module alu (
     input  wire [31:0]  src1,
     input  wire [31:0]  src2,
 
-    output wire         zero,
     output wire [31:0]  result
 );
 
@@ -23,13 +22,16 @@ module alu (
             `ALU_SLL:    alu_core = src1 << src2[4:0];
             `ALU_SRL:    alu_core = src1 >> src2[4:0];
             `ALU_SRA:    alu_core = $signed(src1) >> src2[4:0];
-            `ALU_SLTU:   alu_core = src1 < src2;
-            `ALU_SLT:    alu_core = $signed(src1) + $signed(src2);     
+            `ALU_SEQ:    alu_core = src1 == src2;                   // Set EQual
+            `ALU_SNE:    alu_core = src1 != src2;                   // Set Not Equal
+            `ALU_SLT:    alu_core = $signed(src1) < $signed(src2);  // Set Less Than
+            `ALU_SGT:    alu_core = $signed(src1) > $signed(src2);  // Set Greater Than
+            `ALU_SLTU:   alu_core = src1 < src2;                    // Set Less Than Unsigned
+            `ALU_SGTU:   alu_core = src1 > src2;                    // Set Greater Than Unsigned
             default:     alu_core = 32'b0;       
         endcase
     endfunction
 
     assign  result = alu_core(alu_op, src1, src2);
-    assign  zero = result == 32'b0;
 
 endmodule

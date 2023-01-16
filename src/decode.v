@@ -13,6 +13,7 @@ module decode (
     output wire         reg_write,
     output wire [31:0]  imm
 );
+    // calcurates immideates value
     function [31:0] imm_f;
         input [31:0] instr_raw;
         case (instr_raw[6:0])
@@ -20,6 +21,7 @@ module decode (
             `OPCODE_SW:     imm_f = {{20{instr_raw[31]}}, instr_raw[31:25], instr_raw[11:7]};
             `OPCODE_OP:     imm_f = 32'b0;
             `OPCODE_OP_IMM: imm_f = {{20{instr_raw[31]}}, instr_raw[31:20]};
+            `OPCODE_BRANCH: imm_f = {{20{instr_raw[31]}}, instr_raw[7], instr_raw[30:25], instr_raw[11:8], {1'b0}}; // type B
             default:        imm_f = 32'b0;
         endcase
     endfunction
@@ -55,6 +57,16 @@ module decode (
                 `INST_SRXI_FUNCT:    alu_op_f = instr_raw[30] ? `ALU_SRA : `ALU_SRL;
                 `INST_SLTI_FUNCT:    alu_op_f = `ALU_SLT;
                 `INST_SLTIU_FUNCT:   alu_op_f = `ALU_SLTU;
+                default:             alu_op_f = `ALU_NONE;
+            endcase 
+        end else if (instr_raw[6:0] == `OPCODE_BRANCH) begin
+            case (instr_raw[14:12])
+                `INST_BEQ_FUNCT:     alu_op_f = `ALU_SEQ;   // Set EQual 
+                `INST_BNE_FUNCT:     alu_op_f = `ALU_SNE;   // Set Not Equal
+                `INST_BLT_FUNCT:     alu_op_f = `ALU_SLT;   
+                `INST_BGT_FUNCT:     alu_op_f = `ALU_SGT;   // Set Greater Than (signed)
+                `INST_BLTU_FUNCT:    alu_op_f = `ALU_SLTU;
+                `INST_BGTU_FUNCT:    alu_op_f = `ALU_SGTU;  // Set Greater Than unsigned
                 default:             alu_op_f = `ALU_NONE;
             endcase 
         end else

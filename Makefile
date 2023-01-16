@@ -11,7 +11,13 @@ simulation: $(test_program_dst)
 	iverilog -o build/simulation -Isrc src/top.v
 	build/simulation
 
-$(test_program_dst): $(test_program_src)
+$(test_program_dst):
 	riscv32-unknown-linux-gnu-gcc -c -o build/test.o app/test.s
+	riscv32-unknown-linux-gnu-objdump -d build/test.o
 	riscv32-unknown-linux-gnu-objcopy -O binary -j .text build/test.o
 	xxd -e -c 4 build/test.o | cut -d ' ' -f 2 > build/testi.txt
+
+.PHONY: disas
+disas:
+	riscv32-unknown-linux-gnu-gcc -c -o build/test_elf.o app/test.s
+	riscv32-unknown-linux-gnu-objdump -d build/test_elf.o
