@@ -162,6 +162,8 @@ module core (
         .ex_rs2_addr    (id_ex_rs2_addr),
         .ex_rs1_val     (id_ex_rs1_val),
         .ex_rs2_val     (id_ex_rs2_val),
+        .mem_reg_write  (ex_mem_reg_write), 
+        .mem_mem_read   (ex_mem_mem_read),
         .mem_rd_addr    (ex_mem_rd_addr),
         .mem_rd_val     (ex_mem_result),
         .wb_rd_addr     (mem_wb_rd_addr),
