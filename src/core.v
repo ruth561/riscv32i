@@ -22,10 +22,15 @@ module core (
     /** TODO: データは１バイトずつにしたほうがいい */
     reg [7:0] dmem [0:63]; // data memory
 
+    // ====================   IF   ====================
     // pipeline registers between IF and ID 
     reg [31:0]  if_id_pc;
     reg [31:0]  if_id_instr;
 
+    // ====================   ID   ====================
+    wire [4:0]  id_rs1_addr;
+    wire [4:0]  id_rs2_addr;
+    
     // pipeline registers between ID and EX 
     reg [31:0]  id_ex_pc;
     reg [ 4:0]  id_ex_rs1_addr;
@@ -52,6 +57,7 @@ module core (
     wire        id_reg_write;
     wire [31:0] id_imm;
 
+    // ====================   EX   ====================
     // pipeline registers between EX and MEM
     reg [31:0]  ex_mem_branch_addr;
     reg [31:0]  ex_mem_result;
@@ -67,11 +73,13 @@ module core (
     wire [31:0] ex_rs2_val; // forwarded value
     wire [31:0] ex_result;
 
+    // ====================   MEM  ====================
     // pipeline registers between MEM and WB
     reg [ 4:0]  mem_wb_rd_addr;
     reg [31:0]  mem_wb_data;
 
-    // wire from memory stage
+    // control wire
+    wire        stall;
     wire        branch_misprediction;     // branch if true
 
     // wires
@@ -82,17 +90,28 @@ module core (
     // STAGE 1 (IF)
     //-------------------------------------------------
     always @(posedge clock) begin
-        if_id_pc    <= pc;
-        if (branch_misprediction) if_id_instr <= `INST_NOP;
-        else                      if_id_instr <= imem[pc >> 2];
+        if (branch_misprediction) begin
+            if_id_pc    <= pc;
+            if_id_instr <= `INST_NOP;
+        end else if (stall) begin
+            if_id_pc    <= if_id_pc;
+            if_id_instr <= if_id_instr;
+        end else begin
+            if_id_pc    <= pc;
+            if_id_instr <= imem[pc >> 2];
+        end
 
         if (branch_misprediction) pc <= ex_mem_branch_addr;
+        else if (stall)           pc <= pc;
         else                      pc <= pc + 4;
     end
 
     //-------------------------------------------------
     // STAGE 2 (ID)
     //-------------------------------------------------
+    assign id_rs1_addr = if_id_instr[19:15];
+    assign id_rs2_addr = if_id_instr[24:20];
+
     decode d_stage (
         .clock      (clock),
         .reset      (reset),
@@ -110,8 +129,8 @@ module core (
     regfile regfile (
         .clock      (clock), 
         .reset      (reset),
-        .rs1_addr   (if_id_instr[19:15]), 
-        .rs2_addr   (if_id_instr[24:20]),
+        .rs1_addr   (id_rs1_addr), 
+        .rs2_addr   (id_rs2_addr),
         .rd_addr    (rd_addr),  // from WB stage
         .w_val      (rd_value), // from WB stage
 
@@ -129,15 +148,15 @@ module core (
 
     always @(posedge clock) begin
         id_ex_pc        <= if_id_pc;
-        id_ex_rs1_addr  <= if_id_instr[19:15];
-        id_ex_rs2_addr  <= if_id_instr[24:20];
+        id_ex_rs1_addr  <= id_rs1_addr;
+        id_ex_rs2_addr  <= id_rs2_addr;
         id_ex_rs1_val   <= id_rs1_val;
         id_ex_rs2_val   <= id_rs2_val;
         id_ex_rd_addr   <= if_id_instr[11:7];
         id_ex_imm       <= id_imm;
 
         // for control bit
-        if (branch_misprediction) begin
+        if (branch_misprediction || stall) begin
             id_ex_branch    <= `FALSE;
             id_ex_mem_read  <= `FALSE;
             id_ex_mem_write <= `FALSE;
@@ -237,6 +256,10 @@ module core (
     assign rd_addr  = mem_wb_rd_addr;
     assign rd_value = mem_wb_data;
 
+    //-------------------------------------------------
+    // Control 
+    //-------------------------------------------------
+    assign stall = id_ex_mem_read && (id_rs1_addr == id_ex_rd_addr || id_rs2_addr == id_ex_rd_addr);
 
     //-------------------------------------------------
     // FOR DEBUG

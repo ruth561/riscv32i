@@ -8,18 +8,21 @@
     .global main
 main:
     xor     t0, t0, t0
-    addi    t0, t0, 0x123
-    sw      t0, 0(zero)
-    lw      t2,0x25(zero)
-    addi    t2, t2, -0x23
-    nop     
-    nop     
-    nop     
-    nop     
-    nop     
-    nop     
-    nop     
-    nop     
-    nop    
-    nop 
-    nop 
+    addi    t0, t0, 50
+    xor     t1, t1, t1
+.L1:
+    add     t1, t1, t0
+    addi    t0, t0, -1
+    bgt     t0, zero, .L1
+
+    sw      t1, 0(zero)
+.L2:
+    nop
+    beq     zero, zero, .L2
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
