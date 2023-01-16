@@ -163,7 +163,7 @@ module core (
         ex_mem_result       <= ex_result;
         ex_mem_write_data   <= id_ex_rs2;
         ex_mem_rd_addr      <= id_ex_rd_addr;
-        
+
         // for control bit
         if (branch_misprediction) begin
             ex_mem_branch       <= `FALSE;
@@ -229,10 +229,10 @@ module core (
         $display("a1  : %x", debug_a1);
         $display("");
         $display("[data memory dump]");
-        $display("0000: %x %x %x %x %x %x %x %x", 
-            dmem[0], dmem[1], dmem[2], dmem[3], dmem[4], dmem[5], dmem[6], dmem[7]);
-        $display("0008: %x %x %x %x %x %x %x %x", 
-            dmem[8], dmem[9], dmem[10], dmem[11], dmem[12], dmem[13], dmem[14], dmem[15]);
+        $display("0000: %x %x %x %x %x %x %x %x", dmem[0], dmem[1], dmem[2], dmem[3], dmem[4], dmem[5], dmem[6], dmem[7]);
+        $display("0008: %x %x %x %x %x %x %x %x", dmem[8], dmem[9], dmem[10], dmem[11], dmem[12], dmem[13], dmem[14], dmem[15]);
+        $display("0010: %x %x %x %x %x %x %x %x", dmem[16], dmem[17], dmem[18], dmem[19], dmem[20], dmem[21], dmem[22], dmem[23]);
+        $display("0018: %x %x %x %x %x %x %x %x", dmem[24], dmem[25], dmem[26], dmem[27], dmem[28], dmem[29], dmem[30], dmem[31]);
         timer = timer + 1;
     end
 

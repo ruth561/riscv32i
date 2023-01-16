@@ -11,7 +11,7 @@ simulation: $(test_program_dst)
 	iverilog -o build/simulation -Isrc src/top.v
 	build/simulation
 
-$(test_program_dst):
+$(test_program_dst): $(test_program_src)
 	riscv32-unknown-linux-gnu-gcc -c -o build/test.o app/test.s
 	riscv32-unknown-linux-gnu-objdump -d build/test.o
 	riscv32-unknown-linux-gnu-objcopy -O binary -j .text build/test.o
