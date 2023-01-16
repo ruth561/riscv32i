@@ -67,7 +67,7 @@ module core (
     reg [31:0]  mem_wb_data;
 
     // wire from memory stage
-    wire        pc_src;     // branch if true
+    wire        branch_misprediction;     // branch if true
 
     // wires
     wire [ 4:0] rd_addr;
@@ -78,10 +78,11 @@ module core (
     //-------------------------------------------------
     always @(posedge clock) begin
         if_id_pc    <= pc;
-        if_id_instr <= imem[pc >> 2];
+        if (branch_misprediction) if_id_instr <= `INST_NOP;
+        else                      if_id_instr <= imem[pc >> 2];
 
-        if (pc_src) pc <= ex_mem_branch_addr;
-        else        pc <= pc + 4;
+        if (branch_misprediction) pc <= ex_mem_branch_addr;
+        else                      pc <= pc + 4;
     end
 
     //-------------------------------------------------
@@ -126,13 +127,24 @@ module core (
         id_ex_rs1       <= id_rs1;
         id_ex_rs2       <= id_rs2;
         id_ex_rd_addr   <= if_id_instr[11:7];
-        id_ex_branch    <= id_branch;
-        id_ex_mem_read  <= id_mem_read;
-        id_ex_mem_write <= id_mem_write;
-        id_ex_alu_op    <= id_alu_op;
-        id_ex_alu_src   <= id_alu_src;
-        id_ex_reg_write <= id_reg_write;
         id_ex_imm       <= id_imm;
+
+        // for control bit
+        if (branch_misprediction) begin
+            id_ex_branch    <= `FALSE;
+            id_ex_mem_read  <= `FALSE;
+            id_ex_mem_write <= `FALSE;
+            id_ex_alu_op    <= `ALU_NONE;
+            id_ex_alu_src   <= `FALSE;
+            id_ex_reg_write <= `FALSE;
+        end else begin
+            id_ex_branch    <= id_branch;
+            id_ex_mem_read  <= id_mem_read;
+            id_ex_mem_write <= id_mem_write;
+            id_ex_alu_op    <= id_alu_op;
+            id_ex_alu_src   <= id_alu_src;
+            id_ex_reg_write <= id_reg_write;
+        end
     end
 
     //-------------------------------------------------
@@ -150,11 +162,20 @@ module core (
         ex_mem_branch_addr  <= id_ex_pc + id_ex_imm;
         ex_mem_result       <= ex_result;
         ex_mem_write_data   <= id_ex_rs2;
-        ex_mem_branch       <= id_ex_branch;
-        ex_mem_mem_read     <= id_ex_mem_read;
-        ex_mem_mem_write    <= id_ex_mem_write; 
-        ex_mem_reg_write    <= id_ex_reg_write; 
         ex_mem_rd_addr      <= id_ex_rd_addr;
+        
+        // for control bit
+        if (branch_misprediction) begin
+            ex_mem_branch       <= `FALSE;
+            ex_mem_mem_read     <= `FALSE;
+            ex_mem_mem_write    <= `FALSE; 
+            ex_mem_reg_write    <= `FALSE;
+        end else begin
+            ex_mem_branch       <= id_ex_branch;
+            ex_mem_mem_read     <= id_ex_mem_read;
+            ex_mem_mem_write    <= id_ex_mem_write; 
+            ex_mem_reg_write    <= id_ex_reg_write;
+        end
     end
 
     //-------------------------------------------------
@@ -182,7 +203,7 @@ module core (
         end
     end
 
-    assign pc_src = ex_mem_branch && ex_mem_result;
+    assign branch_misprediction = ex_mem_branch && ex_mem_result;
         
     //-------------------------------------------------
     // STAGE 5 (WB)
