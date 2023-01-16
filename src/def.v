@@ -22,8 +22,8 @@
 
 `define ALU_SEQ                                 4'b1100
 `define ALU_SNE                                 4'b1101
-`define ALU_SGT                                 4'b1110
-`define ALU_SGTU                                4'b1111
+`define ALU_SGE                                 4'b1110
+`define ALU_SGEU                                4'b1111
 
 //--------------------------------------------------------------------
 // ALU Src
@@ -68,6 +68,6 @@
 `define INST_BEQ_FUNCT                          3'b000
 `define INST_BNE_FUNCT                          3'b001
 `define INST_BLT_FUNCT                          3'b100
-`define INST_BGT_FUNCT                          3'b101
+`define INST_BGE_FUNCT                          3'b101
 `define INST_BLTU_FUNCT                         3'b110
-`define INST_BGTU_FUNCT                         3'b111
+`define INST_BGEU_FUNCT                         3'b111

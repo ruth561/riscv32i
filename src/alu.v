@@ -25,9 +25,9 @@ module alu (
             `ALU_SEQ:    alu_core = src1 == src2;                   // Set EQual
             `ALU_SNE:    alu_core = src1 != src2;                   // Set Not Equal
             `ALU_SLT:    alu_core = $signed(src1) < $signed(src2);  // Set Less Than
-            `ALU_SGT:    alu_core = $signed(src1) > $signed(src2);  // Set Greater Than
+            `ALU_SGE:    alu_core = $signed(src1) >= $signed(src2);  // Set Greater Than
             `ALU_SLTU:   alu_core = src1 < src2;                    // Set Less Than Unsigned
-            `ALU_SGTU:   alu_core = src1 > src2;                    // Set Greater Than Unsigned
+            `ALU_SGEU:   alu_core = src1 >= src2;                    // Set Greater Than Unsigned
             default:     alu_core = 32'b0;       
         endcase
     endfunction

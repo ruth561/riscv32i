@@ -64,9 +64,9 @@ module decode (
                 `INST_BEQ_FUNCT:     alu_op_f = `ALU_SEQ;   // Set EQual 
                 `INST_BNE_FUNCT:     alu_op_f = `ALU_SNE;   // Set Not Equal
                 `INST_BLT_FUNCT:     alu_op_f = `ALU_SLT;   
-                `INST_BGT_FUNCT:     alu_op_f = `ALU_SGT;   // Set Greater Than (signed)
+                `INST_BGE_FUNCT:     alu_op_f = `ALU_SGE;   // Set Greater Than (signed)
                 `INST_BLTU_FUNCT:    alu_op_f = `ALU_SLTU;
-                `INST_BGTU_FUNCT:    alu_op_f = `ALU_SGTU;  // Set Greater Than unsigned
+                `INST_BGEU_FUNCT:    alu_op_f = `ALU_SGEU;  // Set Greater Than unsigned
                 default:             alu_op_f = `ALU_NONE;
             endcase 
         end else
