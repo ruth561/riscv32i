@@ -1,6 +1,7 @@
 `include "decode.v"
 `include "regfile.v"
 `include "alu.v"
+`include "fwd.v"
 
 module core (
     input  wire     clock,
@@ -27,8 +28,10 @@ module core (
 
     // pipeline registers between ID and EX 
     reg [31:0]  id_ex_pc;
-    reg [31:0]  id_ex_rs1;
-    reg [31:0]  id_ex_rs2;
+    reg [ 4:0]  id_ex_rs1_addr;
+    reg [ 4:0]  id_ex_rs2_addr;
+    reg [31:0]  id_ex_rs1_val;
+    reg [31:0]  id_ex_rs2_val;
     reg [ 4:0]  id_ex_rd_addr;
     reg         id_ex_branch;
     reg         id_ex_mem_read;
@@ -39,8 +42,8 @@ module core (
     reg [31:0]  id_ex_imm;
 
     // wires from decode stage
-    wire [31:0] id_rs1;
-    wire [31:0] id_rs2;
+    wire [31:0] id_rs1_val;
+    wire [31:0] id_rs2_val;
     wire        id_branch;
     wire        id_mem_read;
     wire        id_mem_write;
@@ -60,6 +63,8 @@ module core (
     reg [ 4:0]  ex_mem_rd_addr;
 
     // wire from execute stage
+    wire [31:0] ex_rs1_val; // forwarded value
+    wire [31:0] ex_rs2_val; // forwarded value
     wire [31:0] ex_result;
 
     // pipeline registers between MEM and WB
@@ -110,8 +115,8 @@ module core (
         .rd_addr    (rd_addr),  // from WB stage
         .w_val      (rd_value), // from WB stage
 
-        .rs1_val    (id_rs1),
-        .rs2_val    (id_rs2),
+        .rs1_val    (id_rs1_val),
+        .rs2_val    (id_rs2_val),
 
         .debug_ra   (debug_ra),
         .debug_sp   (debug_sp),
@@ -124,8 +129,10 @@ module core (
 
     always @(posedge clock) begin
         id_ex_pc        <= if_id_pc;
-        id_ex_rs1       <= id_rs1;
-        id_ex_rs2       <= id_rs2;
+        id_ex_rs1_addr  <= if_id_instr[19:15];
+        id_ex_rs2_addr  <= if_id_instr[24:20];
+        id_ex_rs1_val   <= id_rs1_val;
+        id_ex_rs2_val   <= id_rs2_val;
         id_ex_rd_addr   <= if_id_instr[11:7];
         id_ex_imm       <= id_imm;
 
@@ -150,10 +157,24 @@ module core (
     //-------------------------------------------------
     // STAGE 3 (EX)
     //-------------------------------------------------
+    fwd _fwd (
+        .ex_rs1_addr    (id_ex_rs1_addr),
+        .ex_rs2_addr    (id_ex_rs2_addr),
+        .ex_rs1_val     (id_ex_rs1_val),
+        .ex_rs2_val     (id_ex_rs2_val),
+        .mem_rd_addr    (ex_mem_rd_addr),
+        .mem_rd_val     (ex_mem_result),
+        .wb_rd_addr     (mem_wb_rd_addr),
+        .wb_rd_val      (mem_wb_data),
+
+        .rs1            (ex_rs1_val),
+        .rs2            (ex_rs2_val)
+    );
+
     alu alu (
         .alu_op     (id_ex_alu_op),
-        .src1       (id_ex_rs1),
-        .src2       (id_ex_alu_src ? id_ex_imm : id_ex_rs2),
+        .src1       (ex_rs1_val),
+        .src2       (id_ex_alu_src ? id_ex_imm : ex_rs2_val),
 
         .result     (ex_result)
     );
@@ -161,7 +182,7 @@ module core (
     always @(posedge clock) begin
         ex_mem_branch_addr  <= id_ex_pc + id_ex_imm;
         ex_mem_result       <= ex_result;
-        ex_mem_write_data   <= id_ex_rs2;
+        ex_mem_write_data   <= id_ex_rs2_val;
         ex_mem_rd_addr      <= id_ex_rd_addr;
 
         // for control bit
