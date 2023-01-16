@@ -8,11 +8,10 @@
     .global main
 main:
     xor     t0, t0, t0
-    xor     t1, t1, t1  
     addi    t0, t0, 0x123
-    addi    t1, t1, 0x56
-    add     t2, t0, t1
-    nop     
+    sw      t0, 0(zero)
+    lw      t2,0x25(zero)
+    addi    t2, t2, -0x23
     nop     
     nop     
     nop     
@@ -22,4 +21,5 @@ main:
     nop     
     nop     
     nop    
+    nop 
     nop 

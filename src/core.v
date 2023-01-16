@@ -182,7 +182,7 @@ module core (
     always @(posedge clock) begin
         ex_mem_branch_addr  <= id_ex_pc + id_ex_imm;
         ex_mem_result       <= ex_result;
-        ex_mem_write_data   <= id_ex_rs2_val;
+        ex_mem_write_data   <= ex_rs2_val;
         ex_mem_rd_addr      <= id_ex_rd_addr;
 
         // for control bit
@@ -214,10 +214,14 @@ module core (
     always @(posedge clock) begin
         if (ex_mem_reg_write) begin
             mem_wb_rd_addr  <= ex_mem_rd_addr;
-            case (ex_mem_mem_read)
-                `TRUE:  mem_wb_data     <= dmem[ex_mem_result];
-                `FALSE: mem_wb_data     <= ex_mem_result;
-            endcase
+            if (ex_mem_mem_read) begin
+                mem_wb_data[ 7: 0]  <= dmem[ex_mem_result];
+                mem_wb_data[15: 8]  <= dmem[ex_mem_result + 1];
+                mem_wb_data[23:16]  <= dmem[ex_mem_result + 2];
+                mem_wb_data[31:24]  <= dmem[ex_mem_result + 3];
+            end else begin
+                mem_wb_data         <= ex_mem_result;
+            end
         end else begin // write to x0, meaning not writing.
             mem_wb_rd_addr  <= 5'b0;
             mem_wb_data     <= 32'b0;

@@ -22,8 +22,8 @@ module regfile (
 
     reg [31:0] regs [0:31];
 
-    assign rs1_val = (rs1_addr == 5'b0) ? 32'b0 : regs[rs1_addr];
-    assign rs2_val = (rs2_addr == 5'b0) ? 32'b0 : regs[rs2_addr];
+    assign rs1_val = rs1_addr == 5'b0 ? 32'b0 : (rs1_addr == rd_addr ? w_val : regs[rs1_addr]);
+    assign rs2_val = rs2_addr == 5'b0 ? 32'b0 : (rs2_addr == rd_addr ? w_val : regs[rs2_addr]);
 
     // for debug
     assign debug_ra = regs[1];
