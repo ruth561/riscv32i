@@ -8,7 +8,7 @@
     .global main
 main:
     jal     ra, .L1
-    nop 
+    addi    t1, t1, 0x123
     nop
     nop
     nop
@@ -17,7 +17,7 @@ main:
     nop
 .L1:
     jal     t0, .main
-    nop
+    addi    t1, t1, 0x456
     nop
     nop
     nop

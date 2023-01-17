@@ -101,7 +101,7 @@ module core (
         end else if (stall) begin
             if_id_pc    <= if_id_pc;
             if_id_instr <= if_id_instr;
-        end else if (id_opcode == `OPCODE_JAL) begin
+        end else if (id_jal) begin // when id stage processing jal instruction
             if_id_pc    <= 32'b0;
             if_id_instr <= `INST_NOP;
         end else begin
@@ -109,9 +109,10 @@ module core (
             if_id_instr <= imem[pc >> 2];
         end
 
-        if (branch_misprediction) pc <= ex_mem_branch_addr;
-        else if (stall)           pc <= pc;
-        else                      pc <= pc + 4;
+        if (branch_misprediction)   pc <= ex_mem_branch_addr;
+        else if (stall)             pc <= pc;
+        else if (id_jal)            pc <= if_id_pc + id_imm;
+        else                        pc <= pc + 4;
     end
 
     //-------------------------------------------------
