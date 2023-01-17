@@ -7,19 +7,16 @@
     .text
     .global main
 main:
-    xor     t0, t0, t0
-    addi    t0, t0, 50
-    xor     t1, t1, t1
+    jal     ra, .L1
+    nop 
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
 .L1:
-    add     t1, t1, t0
-    addi    t0, t0, -1
-    bgt     t0, zero, .L1
-
-    sw      t1, 0(zero)
-.L2:
-    nop
-    beq     zero, zero, .L2
-    nop
+    jal     t0, .main
     nop
     nop
     nop

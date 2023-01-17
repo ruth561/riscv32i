@@ -39,6 +39,7 @@
 `define OPCODE_OP                               7'b0110011
 `define OPCODE_OP_IMM                           7'b0010011
 `define OPCODE_BRANCH                           7'b1100011
+`define OPCODE_JAL                              7'b1101111
 
 //--------------------------------------------------------------------
 // INSTRUCTION FUNCTION

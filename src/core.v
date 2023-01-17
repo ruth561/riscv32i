@@ -28,6 +28,7 @@ module core (
     reg [31:0]  if_id_instr;
 
     // ====================   ID   ====================
+    wire [6:0]  id_opcode;
     wire [4:0]  id_rs1_addr;
     wire [4:0]  id_rs2_addr;
     
@@ -45,10 +46,12 @@ module core (
     reg         id_ex_alu_src;
     reg         id_ex_reg_write;
     reg [31:0]  id_ex_imm;
+    reg         id_ex_jal; // whether this instruction is jal?
 
     // wires from decode stage
     wire [31:0] id_rs1_val;
     wire [31:0] id_rs2_val;
+    wire        id_jal;
     wire        id_branch;
     wire        id_mem_read;
     wire        id_mem_write;
@@ -59,6 +62,7 @@ module core (
 
     // ====================   EX   ====================
     // pipeline registers between EX and MEM
+    reg [31:0]  ex_mem_pc;
     reg [31:0]  ex_mem_branch_addr;
     reg [31:0]  ex_mem_result;
     reg [31:0]  ex_mem_write_data;
@@ -67,6 +71,7 @@ module core (
     reg         ex_mem_reg_write;
     reg         ex_mem_mem_write;
     reg [ 4:0]  ex_mem_rd_addr;
+    reg         ex_mem_jal;
 
     // wire from execute stage
     wire [31:0] ex_rs1_val; // forwarded value
@@ -96,6 +101,9 @@ module core (
         end else if (stall) begin
             if_id_pc    <= if_id_pc;
             if_id_instr <= if_id_instr;
+        end else if (id_opcode == `OPCODE_JAL) begin
+            if_id_pc    <= 32'b0;
+            if_id_instr <= `INST_NOP;
         end else begin
             if_id_pc    <= pc;
             if_id_instr <= imem[pc >> 2];
@@ -109,6 +117,7 @@ module core (
     //-------------------------------------------------
     // STAGE 2 (ID)
     //-------------------------------------------------
+    assign id_opcode   = if_id_instr[6:0];
     assign id_rs1_addr = if_id_instr[19:15];
     assign id_rs2_addr = if_id_instr[24:20];
 
@@ -117,6 +126,7 @@ module core (
         .reset      (reset),
         .instr_raw  (if_id_instr),
 
+        .jal        (id_jal),
         .branch     (id_branch),
         .mem_read   (id_mem_read),
         .mem_write  (id_mem_write),
@@ -157,6 +167,7 @@ module core (
 
         // for control bit
         if (branch_misprediction || stall) begin
+            id_ex_jal       <= `FALSE;
             id_ex_branch    <= `FALSE;
             id_ex_mem_read  <= `FALSE;
             id_ex_mem_write <= `FALSE;
@@ -164,6 +175,7 @@ module core (
             id_ex_alu_src   <= `FALSE;
             id_ex_reg_write <= `FALSE;
         end else begin
+            id_ex_jal       <= id_jal;
             id_ex_branch    <= id_branch;
             id_ex_mem_read  <= id_mem_read;
             id_ex_mem_write <= id_mem_write;
@@ -200,6 +212,7 @@ module core (
     );
 
     always @(posedge clock) begin
+        ex_mem_pc           <= id_ex_pc;
         ex_mem_branch_addr  <= id_ex_pc + id_ex_imm;
         ex_mem_result       <= ex_result;
         ex_mem_write_data   <= ex_rs2_val;
@@ -207,11 +220,13 @@ module core (
 
         // for control bit
         if (branch_misprediction) begin
+            ex_mem_jal          <= `FALSE;
             ex_mem_branch       <= `FALSE;
             ex_mem_mem_read     <= `FALSE;
             ex_mem_mem_write    <= `FALSE; 
             ex_mem_reg_write    <= `FALSE;
         end else begin
+            ex_mem_jal          <= id_ex_jal;
             ex_mem_branch       <= id_ex_branch;
             ex_mem_mem_read     <= id_ex_mem_read;
             ex_mem_mem_write    <= id_ex_mem_write; 
@@ -239,6 +254,8 @@ module core (
                 mem_wb_data[15: 8]  <= dmem[ex_mem_result + 1];
                 mem_wb_data[23:16]  <= dmem[ex_mem_result + 2];
                 mem_wb_data[31:24]  <= dmem[ex_mem_result + 3];
+            end else if (ex_mem_jal) begin
+                mem_wb_data         <= ex_mem_pc + 4;
             end else begin
                 mem_wb_data         <= ex_mem_result;
             end
