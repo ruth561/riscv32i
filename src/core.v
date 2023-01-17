@@ -42,6 +42,8 @@ module core (
     reg         id_ex_jal; // whether this instruction is jal?
     reg         id_ex_jalr;
     reg         id_ex_branch;
+    reg         id_ex_lui;
+    reg         id_ex_auipc;
     reg         id_ex_mem_read;
     reg         id_ex_mem_write;
     reg [ 3:0]  id_ex_alu_op;
@@ -55,6 +57,8 @@ module core (
     wire        id_jal;
     wire        id_jalr;
     wire        id_branch;
+    wire        id_lui;
+    wire        id_auipc;
     wire        id_mem_read;
     wire        id_mem_write;
     wire [ 3:0] id_alu_op;
@@ -133,6 +137,8 @@ module core (
         .jal        (id_jal),
         .jalr       (id_jalr),
         .branch     (id_branch),
+        .lui        (id_lui),
+        .auipc      (id_auipc),
         .mem_read   (id_mem_read),
         .mem_write  (id_mem_write),
         .alu_op     (id_alu_op),
@@ -175,6 +181,8 @@ module core (
             id_ex_jal       <= `FALSE;
             id_ex_jalr      <= `FALSE;
             id_ex_branch    <= `FALSE;
+            id_ex_lui       <= `FALSE;
+            id_ex_auipc     <= `FALSE;
             id_ex_mem_read  <= `FALSE;
             id_ex_mem_write <= `FALSE;
             id_ex_alu_op    <= `ALU_NONE;
@@ -184,6 +192,8 @@ module core (
             id_ex_jal       <= id_jal;
             id_ex_jalr      <= id_jalr;
             id_ex_branch    <= id_branch;
+            id_ex_lui       <= id_lui;
+            id_ex_auipc     <= id_auipc;
             id_ex_mem_read  <= id_mem_read;
             id_ex_mem_write <= id_mem_write;
             id_ex_alu_op    <= id_alu_op;
@@ -212,7 +222,7 @@ module core (
 
     alu alu (
         .alu_op     (id_ex_alu_op),
-        .src1       (ex_rs1_val),
+        .src1       (id_ex_lui ? 32'b0 : (id_ex_auipc ? id_ex_pc : ex_rs1_val)),
         .src2       (id_ex_alu_src ? id_ex_imm : ex_rs2_val),
 
         .result     (ex_result)
