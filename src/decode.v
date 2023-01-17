@@ -6,6 +6,7 @@ module decode (
     input  wire [31:0]  instr_raw,
 
     output wire         jal,
+    output wire         jalr,
     output wire         branch,
     output wire         mem_read,
     output wire         mem_write,
@@ -24,6 +25,7 @@ module decode (
             `OPCODE_OP_IMM: imm_f = {{20{instr_raw[31]}}, instr_raw[31:20]};
             `OPCODE_BRANCH: imm_f = {{20{instr_raw[31]}}, instr_raw[7], instr_raw[30:25], instr_raw[11:8], {1'b0}}; // type B
             `OPCODE_JAL:    imm_f = {{12{instr_raw[31]}}, instr_raw[19:12], instr_raw[20], instr_raw[30:21], {1'b0}}; 
+            `OPCODE_JALR:   imm_f = {{20{instr_raw[31]}}, instr_raw[31:20]};
             default:        imm_f = 32'b0;
         endcase
     endfunction
@@ -73,23 +75,28 @@ module decode (
             endcase 
         end else if (instr_raw[6:0] == `OPCODE_JAL) begin // calcurated in other ALU
             alu_op_f      = `ALU_NONE;
+        end else if (instr_raw[6:0] == `OPCODE_JALR) begin // calcurated in other ALU
+            alu_op_f      = `ALU_ADD;
         end else
             alu_op_f      = `ALU_NONE;
     endfunction
 
 
     assign jal          = (instr_raw[6:0] == `OPCODE_JAL);
+    assign jalr         = (instr_raw[6:0] == `OPCODE_JALR);
     assign branch       = (instr_raw[6:0] == `OPCODE_BRANCH);
     assign mem_read     = (instr_raw[6:0] == `OPCODE_LW);
     assign mem_write    = (instr_raw[6:0] == `OPCODE_SW);
     assign alu_op       = alu_op_f(instr_raw);
     assign alu_src      = (instr_raw[6:0] == `OPCODE_SW) ||
                           (instr_raw[6:0] == `OPCODE_LW) ||
-                          (instr_raw[6:0] == `OPCODE_OP_IMM);
+                          (instr_raw[6:0] == `OPCODE_OP_IMM) ||
+                          (instr_raw[6:0] == `OPCODE_JALR);
     assign reg_write    = (instr_raw[6:0] == `OPCODE_LW) ||
                           (instr_raw[6:0] == `OPCODE_OP) ||
                           (instr_raw[6:0] == `OPCODE_OP_IMM) ||
-                          (instr_raw[6:0] == `OPCODE_JAL);
+                          (instr_raw[6:0] == `OPCODE_JAL) ||
+                          (instr_raw[6:0] == `OPCODE_JALR);
     assign imm          = imm_f(instr_raw);
 
 endmodule
