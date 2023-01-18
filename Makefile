@@ -1,6 +1,7 @@
 test_program_src	:= app/test.c
 test_program_bin	:= build/test
 test_program_txt	:= build/test.txt
+riscv-tests-dir		:= ../riscv-tests/isa/
 CFLAGS				= -Wall -ffreestanding
 LDFLAGS				= -z norelro --static --entry _start -pic
 
@@ -17,3 +18,7 @@ build_program:
 	riscv32-unknown-linux-gnu-objdump -d build/test
 	riscv32-unknown-linux-gnu-objcopy -O binary -j .text build/test
 	xxd -e -c 4 build/test | cut -d ' ' -f 2 > build/testi.txt
+
+test-add:
+	riscv32-unknown-linux-gnu-objcopy -O binary $(riscv-tests-dir)/rv32ui-p-add build/rv32ui-p-add
+	xxd -e -c 4 build/rv32ui-p-add | cut -d ' ' -f 2 > build/testi.txt
