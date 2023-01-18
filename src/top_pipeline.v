@@ -20,6 +20,6 @@ module top_pipeline;
         $dumpvars(0, top_pipeline);
         clock = 1'b0;
         reset = 1'b0;
-        #30 $finish;
+        #3000 $finish;
     end
 endmodule

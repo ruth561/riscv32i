@@ -7,6 +7,11 @@ module core (
     input  wire     clock,
     input  wire     reset
 );
+    //
+    // PARAMETER
+    //
+    parameter   DMEM_SIZE = 1 << 12;
+    parameter   IMEM_SIZE = 1 << 12;
 
     reg [31:0] pc;
     // for debug
@@ -18,9 +23,9 @@ module core (
     output [31:0]   debug_a0;
     output [31:0]   debug_a1;
 
-    reg [31:0] imem [0:15]; // instruction memory
+    reg [31:0] imem [0:(IMEM_SIZE >> 2) - 1]; // instruction memory
     /** TODO: データは１バイトずつにしたほうがいい */
-    reg [7:0] dmem [0:63]; // data memory
+    reg [7:0] dmem [0:DMEM_SIZE - 1]; // data memory
 
     // ====================   IF   ====================
     // pipeline registers between IF and ID 
@@ -301,6 +306,7 @@ module core (
     // FOR DEBUG
     //-------------------------------------------------
     reg [7:0] timer;
+    reg [31:0] i, j;
     always @(posedge clock) begin // debug
         // timing is shifted from PC increment
         $display("----- %d -----", timer);
@@ -314,10 +320,11 @@ module core (
         $display("a1  : %x", debug_a1);
         $display("");
         $display("[data memory dump]");
-        $display("0000: %x %x %x %x %x %x %x %x", dmem[0], dmem[1], dmem[2], dmem[3], dmem[4], dmem[5], dmem[6], dmem[7]);
-        $display("0008: %x %x %x %x %x %x %x %x", dmem[8], dmem[9], dmem[10], dmem[11], dmem[12], dmem[13], dmem[14], dmem[15]);
-        $display("0010: %x %x %x %x %x %x %x %x", dmem[16], dmem[17], dmem[18], dmem[19], dmem[20], dmem[21], dmem[22], dmem[23]);
-        $display("0018: %x %x %x %x %x %x %x %x", dmem[24], dmem[25], dmem[26], dmem[27], dmem[28], dmem[29], dmem[30], dmem[31]);
+        for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin
+            $display("%x: %x %x %x %x %x %x %x %x", (i << 3), 
+                dmem[(i << 3)], dmem[(i << 3) + 1], dmem[(i << 3) + 2], dmem[(i << 3) + 3], 
+                dmem[(i << 3) + 4], dmem[(i << 3) + 5], dmem[(i << 3) + 6], dmem[(i << 3) + 7]);
+        end
         timer = timer + 1;
     end
 
@@ -327,7 +334,8 @@ module core (
         timer = 0;
 
         // TODO データメモリ用の読み込みデータも作る
-        $readmemh("build/testd.txt", dmem);
+        // $readmemh("build/testd.txt", dmem);
+        for (i = 0; i < DMEM_SIZE; i++) dmem[i] <= 0;
         $readmemh("build/testi.txt", imem);
     end
 
