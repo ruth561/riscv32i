@@ -4,119 +4,118 @@
 `include "fwd.v"
 `include "csr_regfile.v"
 `include "csr_mask.v"
-module core (
+
+module core #(
+    parameter   DMEM_SIZE = 1 << 12, 
+    parameter   IMEM_SIZE = 1 << 12
+) (
     input  wire     clock,
     input  wire     reset
 );
-    //
-    // PARAMETER
-    //
-    parameter   DMEM_SIZE = 1 << 12;
-    parameter   IMEM_SIZE = 1 << 12;
 
     reg [31:0] pc;
+
     // for debug
-    output [31:0]   debug_ra;
-    output [31:0]   debug_sp;
-    output [31:0]   debug_t0;
-    output [31:0]   debug_t1;
-    output [31:0]   debug_t2;
-    output [31:0]   debug_a0;
-    output [31:0]   debug_a1;
+    wire [31:0]  debug_ra;
+    wire [31:0]  debug_sp;
+    wire [31:0]  debug_t0;
+    wire [31:0]  debug_t1;
+    wire [31:0]  debug_t2;
+    wire [31:0]  debug_a0;
+    wire [31:0]  debug_a1;
 
-    output [31:0]   debug_mstatus;
-    output [31:0]   debug_misa;
+    wire [31:0]  debug_mstatus;
+    wire [31:0]  debug_misa;
 
-    reg [31:0] imem [0:(IMEM_SIZE >> 2) - 1]; // instruction memory
-    /** TODO: データは１バイトずつにしたほうがいい */
-    reg [7:0] dmem [0:DMEM_SIZE - 1]; // data memory
+    reg  [31:0]  imem [0:(IMEM_SIZE >> 2) - 1]; // instruction memory
+    reg  [ 7:0]  dmem [0:DMEM_SIZE - 1]; // data memory
 
     // ====================   IF   ====================
-    // pipeline registers between IF and ID 
-    reg [31:0]  if_id_pc;
-    reg [31:0]  if_id_instr;
+    // IF/ID PIPELINE REGS
+    reg  [31:0]  if_id_pc;
+    reg  [31:0]  if_id_instr;
 
     // ====================   ID   ====================
     // wires from IF/ID
-    wire [ 6:0] id_opcode;
-    wire [ 4:0] id_rs1_addr;
-    wire [ 4:0] id_rs2_addr;
-    wire [ 4:0] id_rd_addr;
-    wire [11:0] id_csr_addr;
-    wire [ 2:0] id_csr_funct;
+    wire [ 6:0]  id_opcode;
+    wire [ 4:0]  id_rs1_addr;
+    wire [ 4:0]  id_rs2_addr;
+    wire [ 4:0]  id_rd_addr;
+    wire [11:0]  id_csr_addr;
+    wire [ 2:0]  id_csr_funct;
 
     // wires into ID/EX
-    wire [31:0] id_rs1_val;
-    wire [31:0] id_rs2_val;
-    wire [31:0] id_csr_val;
-    wire        id_jal;
-    wire        id_jalr;
-    wire        id_branch;
-    wire        id_lui;
-    wire        id_auipc;
-    wire        id_csr;
-    wire        id_mem_read;
-    wire        id_mem_write;
-    wire [ 3:0] id_alu_op;
-    wire        id_alu_src;
-    wire        id_reg_write;
-    wire [31:0] id_imm;
+    wire [31:0]  id_rs1_val;
+    wire [31:0]  id_rs2_val;
+    wire [31:0]  id_csr_val;
+    wire         id_jal;
+    wire         id_jalr;
+    wire         id_branch;
+    wire         id_lui;
+    wire         id_auipc;
+    wire         id_csr;
+    wire         id_mem_read;
+    wire         id_mem_write;
+    wire [ 3:0]  id_alu_op;
+    wire         id_alu_src;
+    wire         id_reg_write;
+    wire [31:0]  id_imm;
     
-    // pipeline registers between ID and EX 
-    reg [31:0]  id_ex_pc;
-    reg [ 4:0]  id_ex_rs1_addr;
-    reg [ 4:0]  id_ex_rs2_addr;
-    reg [31:0]  id_ex_rs1_val;
-    reg [31:0]  id_ex_rs2_val;
-    reg [ 4:0]  id_ex_rd_addr;
-    reg [11:0]  id_ex_csr_addr;
-    reg [31:0]  id_ex_csr_val;
-    reg [ 2:0]  id_ex_csr_funct;
-    reg         id_ex_jal; // whether this instruction is jal?
-    reg         id_ex_jalr;
-    reg         id_ex_branch;
-    reg         id_ex_lui;
-    reg         id_ex_auipc;
-    reg         id_ex_csr;
-    reg         id_ex_mem_read;
-    reg         id_ex_mem_write;
-    reg [ 3:0]  id_ex_alu_op;
-    reg         id_ex_alu_src;
-    reg         id_ex_reg_write;
-    reg [31:0]  id_ex_imm;
+    // ID/EX PIPELINE REGS
+    reg  [31:0]  id_ex_pc;
+    reg  [ 4:0]  id_ex_rs1_addr;
+    reg  [ 4:0]  id_ex_rs2_addr;
+    reg  [31:0]  id_ex_rs1_val;
+    reg  [31:0]  id_ex_rs2_val;
+    reg  [ 4:0]  id_ex_rd_addr;
+    reg  [11:0]  id_ex_csr_addr;
+    reg  [31:0]  id_ex_csr_val;
+    reg  [ 2:0]  id_ex_csr_funct;
+    reg          id_ex_jal;
+    reg          id_ex_jalr;
+    reg          id_ex_branch;
+    reg          id_ex_lui;
+    reg          id_ex_auipc;
+    reg          id_ex_csr;
+    reg          id_ex_mem_read;
+    reg          id_ex_mem_write;
+    reg  [ 3:0]  id_ex_alu_op;
+    reg          id_ex_alu_src;
+    reg          id_ex_reg_write;
+    reg  [31:0]  id_ex_imm;
 
     // ====================   EX   ====================
     // wires into EX/MEM
-    wire [31:0] ex_rs1_val; // forwarded value
-    wire [31:0] ex_rs2_val; // forwarded value
-    wire [31:0] ex_alu_result;
-    wire [31:0] ex_csr_result;
+    wire [31:0]  ex_rs1_val; // forwarded value
+    wire [31:0]  ex_rs2_val; // forwarded value
+    wire [31:0]  ex_alu_result;
+    wire [31:0]  ex_csr_result;
 
-    // pipeline registers between EX and MEM
-    reg [31:0]  ex_mem_pc;
-    reg [31:0]  ex_mem_branch_addr;
-    reg [31:0]  ex_mem_result;
-    reg [31:0]  ex_mem_write_data;
-    reg         ex_mem_branch;
-    reg         ex_mem_mem_read;
-    reg         ex_mem_reg_write;
-    reg         ex_mem_mem_write;
-    reg [ 4:0]  ex_mem_rd_addr;
-    reg         ex_mem_jal;
-    reg         ex_mem_jalr;
+    // EX/MEM PIPELINE REGS
+    reg  [31:0]  ex_mem_pc;
+    reg  [31:0]  ex_mem_branch_addr;
+    reg  [31:0]  ex_mem_result;
+    reg  [31:0]  ex_mem_write_data;
+    reg          ex_mem_branch;
+    reg          ex_mem_mem_read;
+    reg          ex_mem_reg_write;
+    reg          ex_mem_mem_write;
+    reg  [ 4:0]  ex_mem_rd_addr;
+    reg          ex_mem_jal;
+    reg          ex_mem_jalr;
 
     // ====================   MEM  ====================
-    // pipeline registers between MEM and WB
-    reg [ 4:0]  mem_wb_rd_addr;
-    reg [31:0]  mem_wb_data;
+    // MEM/WB PIPELINE REGS
+    reg  [ 4:0]  mem_wb_rd_addr;
+    reg  [31:0]  mem_wb_data;
 
     // control wire
-    wire        stall;
-    wire        branch_misprediction;     // branch if true
+    wire         stall;
+    wire         branch_misprediction;     // branch if true
 
     // wires
-    wire [ 4:0] rd_addr;
-    wire [31:0] rd_value;
+    wire [ 4:0]  rd_addr;
+    wire [31:0]  rd_value;
 
     //-------------------------------------------------
     // STAGE 1 (IF)
@@ -145,14 +144,14 @@ module core (
     //-------------------------------------------------
     // STAGE 2 (ID)
     //-------------------------------------------------
-    assign id_opcode    = if_id_instr[6:0];
+    assign id_opcode    = if_id_instr[ 6: 0];
     assign id_rs1_addr  = if_id_instr[19:15];
     assign id_rs2_addr  = if_id_instr[24:20];
-    assign id_rd_addr   = if_id_instr[11:7];
+    assign id_rd_addr   = if_id_instr[11: 7];
     assign id_csr_addr  = if_id_instr[31:20];
     assign id_csr_funct = if_id_instr[14:12];
 
-    decode d_stage (
+    decode _decode (
         .clock      (clock),
         .reset      (reset),
         .instr_raw  (if_id_instr),
@@ -162,16 +161,16 @@ module core (
         .branch     (id_branch),
         .lui        (id_lui),
         .auipc      (id_auipc),
+        .csr        (id_csr),
         .mem_read   (id_mem_read),
         .mem_write  (id_mem_write),
         .alu_op     (id_alu_op),
         .alu_src    (id_alu_src),
         .reg_write  (id_reg_write),
-        .csr_write  (id_csr),
         .imm        (id_imm)
     );
     
-    regfile regfile (
+    regfile _regfile (
         .clock      (clock), 
         .reset      (reset),
         .rs1_addr   (id_rs1_addr), 
@@ -264,7 +263,7 @@ module core (
         .rs2            (ex_rs2_val)
     );
 
-    alu alu (
+    alu _alu (
         .alu_op     (id_ex_alu_op),
         .src1       (id_ex_lui ? 32'b0 : (id_ex_auipc ? id_ex_pc : ex_rs1_val)),
         .src2       (id_ex_alu_src ? id_ex_imm : ex_rs2_val),

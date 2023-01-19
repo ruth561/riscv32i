@@ -10,12 +10,12 @@ module decode (
     output wire         branch,
     output wire         lui,
     output wire         auipc,
+    output wire         csr, 
     output wire         mem_read,
     output wire         mem_write,
     output wire [ 3:0]  alu_op,
     output wire         alu_src,
     output wire         reg_write,
-    output wire         csr_write,
     output wire [31:0]  imm
 );
     // calcurates immideates value
@@ -40,9 +40,9 @@ module decode (
         input [31:0] instr_raw;
 
         if (instr_raw[6:0] == `OPCODE_LW)       
-            alu_op_f      = `ALU_ADD;
+            alu_op_f    = `ALU_ADD;
         else if (instr_raw[6:0] == `OPCODE_SW)  
-            alu_op_f      = `ALU_ADD;
+            alu_op_f    = `ALU_ADD;
         else if (instr_raw[6:0] == `OPCODE_OP) begin
             case ({instr_raw[31:25], instr_raw[14:12]})
                 `INST_ADD_FUNCT:     alu_op_f = `ALU_ADD;
@@ -79,16 +79,14 @@ module decode (
                 `INST_BGEU_FUNCT:    alu_op_f = `ALU_SGEU;  // Set Greater Than unsigned
                 default:             alu_op_f = `ALU_NONE;
             endcase 
-        end else if (instr_raw[6:0] == `OPCODE_JAL) begin // calcurated in other ALU
-            alu_op_f      = `ALU_NONE;
         end else if (instr_raw[6:0] == `OPCODE_JALR) begin
-            alu_op_f      = `ALU_ADD;
+            alu_op_f    = `ALU_ADD;
         end else if (instr_raw[6:0] == `OPCODE_LUI) begin 
-            alu_op_f      = `ALU_ADD;
+            alu_op_f    = `ALU_ADD;
         end else if (instr_raw[6:0] == `OPCODE_AUIPC) begin 
-            alu_op_f      = `ALU_ADD;
+            alu_op_f    = `ALU_ADD;
         end else
-            alu_op_f      = `ALU_NONE;
+            alu_op_f    = `ALU_NONE;
     endfunction
 
     assign jal          = (instr_raw[6:0] == `OPCODE_JAL);
@@ -96,6 +94,14 @@ module decode (
     assign branch       = (instr_raw[6:0] == `OPCODE_BRANCH);
     assign lui          = (instr_raw[6:0] == `OPCODE_LUI);
     assign auipc        = (instr_raw[6:0] == `OPCODE_AUIPC);
+    assign csr          = instr_raw[6:0] == `OPCODE_SYSTEM && (
+                            instr_raw[14:12] == `INST_CSRRW_FUNCT     ||
+                            instr_raw[14:12] == `INST_CSRRWI_FUNCT    ||
+                            instr_raw[14:12] == `INST_CSRRS_FUNCT     ||
+                            instr_raw[14:12] == `INST_CSRRSI_FUNCT    ||
+                            instr_raw[14:12] == `INST_CSRRC_FUNCT     ||
+                            instr_raw[14:12] == `INST_CSRRCI_FUNCT
+                          );
     assign mem_read     = (instr_raw[6:0] == `OPCODE_LW);
     assign mem_write    = (instr_raw[6:0] == `OPCODE_SW);
     assign alu_op       = alu_op_f(instr_raw);
@@ -103,24 +109,11 @@ module decode (
                           (instr_raw[6:0] == `OPCODE_LW)        ||
                           (instr_raw[6:0] == `OPCODE_OP_IMM)    ||
                           (instr_raw[6:0] == `OPCODE_JALR)      ||
-                          (instr_raw[6:0] == `OPCODE_LUI)       ||
-                          (instr_raw[6:0] == `OPCODE_AUIPC);
+                          lui || auipc;
     assign reg_write    = (instr_raw[6:0] == `OPCODE_LW)        ||
                           (instr_raw[6:0] == `OPCODE_OP)        ||
                           (instr_raw[6:0] == `OPCODE_OP_IMM)    ||
-                          (instr_raw[6:0] == `OPCODE_JAL)       ||
-                          (instr_raw[6:0] == `OPCODE_JALR)      ||
-                          (instr_raw[6:0] == `OPCODE_LUI)       ||
-                          (instr_raw[6:0] == `OPCODE_AUIPC)     ||
-                          (instr_raw[6:0] == `OPCODE_SYSTEM);
-    assign csr_write    = instr_raw[6:0] == `OPCODE_SYSTEM && (
-                              instr_raw[14:12] == `INST_CSRRW_FUNCT     ||
-                              instr_raw[14:12] == `INST_CSRRWI_FUNCT    ||
-                              instr_raw[14:12] == `INST_CSRRS_FUNCT     ||
-                              instr_raw[14:12] == `INST_CSRRSI_FUNCT    ||
-                              instr_raw[14:12] == `INST_CSRRC_FUNCT     ||
-                              instr_raw[14:12] == `INST_CSRRCI_FUNCT    
-                          );
+                          jal || jalr || lui || auipc || csr;
     assign imm          = imm_f(instr_raw);
 
 endmodule
