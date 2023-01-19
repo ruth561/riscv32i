@@ -15,6 +15,7 @@ module decode (
     output wire [ 3:0]  alu_op,
     output wire         alu_src,
     output wire         reg_write,
+    output wire         csr_write,
     output wire [31:0]  imm
 );
     // calcurates immideates value
@@ -30,6 +31,7 @@ module decode (
             `OPCODE_JALR:   imm_f = {{20{instr_raw[31]}}, instr_raw[31:20]};
             `OPCODE_LUI:    imm_f = {instr_raw[31:12], {12'b0}}; // U-type
             `OPCODE_AUIPC:  imm_f = {instr_raw[31:12], {12'b0}}; // U-type
+            `OPCODE_SYSTEM: imm_f = {{27'b0}, instr_raw[19:15]};
             default:        imm_f = 32'b0;
         endcase
     endfunction
@@ -89,7 +91,6 @@ module decode (
             alu_op_f      = `ALU_NONE;
     endfunction
 
-
     assign jal          = (instr_raw[6:0] == `OPCODE_JAL);
     assign jalr         = (instr_raw[6:0] == `OPCODE_JALR);
     assign branch       = (instr_raw[6:0] == `OPCODE_BRANCH);
@@ -110,7 +111,16 @@ module decode (
                           (instr_raw[6:0] == `OPCODE_JAL)       ||
                           (instr_raw[6:0] == `OPCODE_JALR)      ||
                           (instr_raw[6:0] == `OPCODE_LUI)       ||
-                          (instr_raw[6:0] == `OPCODE_AUIPC);
+                          (instr_raw[6:0] == `OPCODE_AUIPC)     ||
+                          (instr_raw[6:0] == `OPCODE_SYSTEM);
+    assign csr_write    = instr_raw[6:0] == `OPCODE_SYSTEM && (
+                              instr_raw[14:12] == `INST_CSRRW_FUNCT     ||
+                              instr_raw[14:12] == `INST_CSRRWI_FUNCT    ||
+                              instr_raw[14:12] == `INST_CSRRS_FUNCT     ||
+                              instr_raw[14:12] == `INST_CSRRSI_FUNCT    ||
+                              instr_raw[14:12] == `INST_CSRRC_FUNCT     ||
+                              instr_raw[14:12] == `INST_CSRRCI_FUNCT    
+                          );
     assign imm          = imm_f(instr_raw);
 
 endmodule

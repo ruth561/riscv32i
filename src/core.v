@@ -2,7 +2,8 @@
 `include "regfile.v"
 `include "alu.v"
 `include "fwd.v"
-
+`include "csr_regfile.v"
+`include "csr_mask.v"
 module core (
     input  wire     clock,
     input  wire     reset
@@ -23,6 +24,9 @@ module core (
     output [31:0]   debug_a0;
     output [31:0]   debug_a1;
 
+    output [31:0]   debug_mstatus;
+    output [31:0]   debug_misa;
+
     reg [31:0] imem [0:(IMEM_SIZE >> 2) - 1]; // instruction memory
     /** TODO: データは１バイトずつにしたほうがいい */
     reg [7:0] dmem [0:DMEM_SIZE - 1]; // data memory
@@ -33,9 +37,30 @@ module core (
     reg [31:0]  if_id_instr;
 
     // ====================   ID   ====================
-    wire [6:0]  id_opcode;
-    wire [4:0]  id_rs1_addr;
-    wire [4:0]  id_rs2_addr;
+    // wires from IF/ID
+    wire [ 6:0] id_opcode;
+    wire [ 4:0] id_rs1_addr;
+    wire [ 4:0] id_rs2_addr;
+    wire [ 4:0] id_rd_addr;
+    wire [11:0] id_csr_addr;
+    wire [ 2:0] id_csr_funct;
+
+    // wires into ID/EX
+    wire [31:0] id_rs1_val;
+    wire [31:0] id_rs2_val;
+    wire [31:0] id_csr_val;
+    wire        id_jal;
+    wire        id_jalr;
+    wire        id_branch;
+    wire        id_lui;
+    wire        id_auipc;
+    wire        id_csr;
+    wire        id_mem_read;
+    wire        id_mem_write;
+    wire [ 3:0] id_alu_op;
+    wire        id_alu_src;
+    wire        id_reg_write;
+    wire [31:0] id_imm;
     
     // pipeline registers between ID and EX 
     reg [31:0]  id_ex_pc;
@@ -44,11 +69,15 @@ module core (
     reg [31:0]  id_ex_rs1_val;
     reg [31:0]  id_ex_rs2_val;
     reg [ 4:0]  id_ex_rd_addr;
+    reg [11:0]  id_ex_csr_addr;
+    reg [31:0]  id_ex_csr_val;
+    reg [ 2:0]  id_ex_csr_funct;
     reg         id_ex_jal; // whether this instruction is jal?
     reg         id_ex_jalr;
     reg         id_ex_branch;
     reg         id_ex_lui;
     reg         id_ex_auipc;
+    reg         id_ex_csr;
     reg         id_ex_mem_read;
     reg         id_ex_mem_write;
     reg [ 3:0]  id_ex_alu_op;
@@ -56,22 +85,13 @@ module core (
     reg         id_ex_reg_write;
     reg [31:0]  id_ex_imm;
 
-    // wires from decode stage
-    wire [31:0] id_rs1_val;
-    wire [31:0] id_rs2_val;
-    wire        id_jal;
-    wire        id_jalr;
-    wire        id_branch;
-    wire        id_lui;
-    wire        id_auipc;
-    wire        id_mem_read;
-    wire        id_mem_write;
-    wire [ 3:0] id_alu_op;
-    wire        id_alu_src;
-    wire        id_reg_write;
-    wire [31:0] id_imm;
-
     // ====================   EX   ====================
+    // wires into EX/MEM
+    wire [31:0] ex_rs1_val; // forwarded value
+    wire [31:0] ex_rs2_val; // forwarded value
+    wire [31:0] ex_alu_result;
+    wire [31:0] ex_csr_result;
+
     // pipeline registers between EX and MEM
     reg [31:0]  ex_mem_pc;
     reg [31:0]  ex_mem_branch_addr;
@@ -84,11 +104,6 @@ module core (
     reg [ 4:0]  ex_mem_rd_addr;
     reg         ex_mem_jal;
     reg         ex_mem_jalr;
-
-    // wire from execute stage
-    wire [31:0] ex_rs1_val; // forwarded value
-    wire [31:0] ex_rs2_val; // forwarded value
-    wire [31:0] ex_result;
 
     // ====================   MEM  ====================
     // pipeline registers between MEM and WB
@@ -130,9 +145,12 @@ module core (
     //-------------------------------------------------
     // STAGE 2 (ID)
     //-------------------------------------------------
-    assign id_opcode   = if_id_instr[6:0];
-    assign id_rs1_addr = if_id_instr[19:15];
-    assign id_rs2_addr = if_id_instr[24:20];
+    assign id_opcode    = if_id_instr[6:0];
+    assign id_rs1_addr  = if_id_instr[19:15];
+    assign id_rs2_addr  = if_id_instr[24:20];
+    assign id_rd_addr   = if_id_instr[11:7];
+    assign id_csr_addr  = if_id_instr[31:20];
+    assign id_csr_funct = if_id_instr[14:12];
 
     decode d_stage (
         .clock      (clock),
@@ -149,6 +167,7 @@ module core (
         .alu_op     (id_alu_op),
         .alu_src    (id_alu_src),
         .reg_write  (id_reg_write),
+        .csr_write  (id_csr),
         .imm        (id_imm)
     );
     
@@ -172,13 +191,31 @@ module core (
         .debug_a1   (debug_a1)
     );
 
+    csr_regfile _csr_regfile (
+        .clock      (clock),
+        .reset      (reset),
+
+        .csr_r_addr (id_csr_addr),
+        .csr_w_addr (id_ex_csr_addr),
+        .csr_w_val  (ex_csr_result),
+        .w_enable   (id_ex_csr),
+
+        .csr_r_val  (id_csr_val), 
+
+        .debug_mstatus  (debug_mstatus), 
+        .debug_misa     (debug_misa) 
+    );
+
     always @(posedge clock) begin
         id_ex_pc        <= if_id_pc;
         id_ex_rs1_addr  <= id_rs1_addr;
         id_ex_rs2_addr  <= id_rs2_addr;
         id_ex_rs1_val   <= id_rs1_val;
         id_ex_rs2_val   <= id_rs2_val;
-        id_ex_rd_addr   <= if_id_instr[11:7];
+        id_ex_rd_addr   <= id_rd_addr;
+        id_ex_csr_addr  <= id_csr_addr;
+        id_ex_csr_val   <= id_csr_val;
+        id_ex_csr_funct <= id_csr_funct;
         id_ex_imm       <= id_imm;
 
         // for control bit
@@ -188,6 +225,7 @@ module core (
             id_ex_branch    <= `FALSE;
             id_ex_lui       <= `FALSE;
             id_ex_auipc     <= `FALSE;
+            id_ex_csr       <= `FALSE;
             id_ex_mem_read  <= `FALSE;
             id_ex_mem_write <= `FALSE;
             id_ex_alu_op    <= `ALU_NONE;
@@ -199,6 +237,7 @@ module core (
             id_ex_branch    <= id_branch;
             id_ex_lui       <= id_lui;
             id_ex_auipc     <= id_auipc;
+            id_ex_csr       <= id_csr;
             id_ex_mem_read  <= id_mem_read;
             id_ex_mem_write <= id_mem_write;
             id_ex_alu_op    <= id_alu_op;
@@ -230,13 +269,22 @@ module core (
         .src1       (id_ex_lui ? 32'b0 : (id_ex_auipc ? id_ex_pc : ex_rs1_val)),
         .src2       (id_ex_alu_src ? id_ex_imm : ex_rs2_val),
 
-        .result     (ex_result)
+        .result     (ex_alu_result)
+    );
+
+    csr_mask _csr_mask (
+        .csr_funct  (id_ex_csr_funct),
+        .csr_val    (id_ex_csr_val),
+        .rs1_val    (ex_rs1_val), // forwarded val
+        .imm        (id_ex_imm),
+
+        .result     (ex_csr_result)
     );
 
     always @(posedge clock) begin
         ex_mem_pc           <= id_ex_pc;
-        ex_mem_branch_addr  <= id_ex_jalr ? ex_result : id_ex_pc + id_ex_imm;
-        ex_mem_result       <= ex_result;
+        ex_mem_branch_addr  <= id_ex_jalr ? ex_alu_result : id_ex_pc + id_ex_imm;
+        ex_mem_result       <= id_ex_csr ? id_ex_csr_val : ex_alu_result;
         ex_mem_write_data   <= ex_rs2_val;
         ex_mem_rd_addr      <= id_ex_rd_addr;
 
@@ -310,14 +358,16 @@ module core (
     always @(posedge clock) begin // debug
         // timing is shifted from PC increment
         $display("----- %d -----", timer);
-        $display("pc  : %x --> %b (%x)", pc, imem[pc >> 2], imem[pc >> 2]);
-        $display("ra  : %x", debug_ra);
-        $display("sp  : %x", debug_sp);
-        $display("t0  : %x", debug_t0);
-        $display("t1  : %x", debug_t1);
-        $display("t2  : %x", debug_t2);
-        $display("a0  : %x", debug_a0);
-        $display("a1  : %x", debug_a1);
+        $display("pc        : %x --> %b (%x)", pc, imem[pc >> 2], imem[pc >> 2]);
+        $display("ra        : %x", debug_ra);
+        $display("sp        : %x", debug_sp);
+        $display("t0        : %x", debug_t0);
+        $display("t1        : %x", debug_t1);
+        $display("t2        : %x", debug_t2);
+        $display("a0        : %x", debug_a0);
+        $display("a1        : %x", debug_a1);
+        $display("mstatus   : %x", debug_mstatus);
+        $display("misa      : %x", debug_misa);
         $display("");
         $display("[data memory dump]");
         for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin

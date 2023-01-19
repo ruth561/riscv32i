@@ -43,6 +43,7 @@
 `define OPCODE_JALR                             7'b1100111
 `define OPCODE_LUI                              7'b0110111
 `define OPCODE_AUIPC                            7'b0010111
+`define OPCODE_SYSTEM                           7'b1110011
 
 //--------------------------------------------------------------------
 // INSTRUCTION FUNCTION
@@ -75,3 +76,27 @@
 `define INST_BGE_FUNCT                          3'b101
 `define INST_BLTU_FUNCT                         3'b110
 `define INST_BGEU_FUNCT                         3'b111
+
+`define INST_CSRRW_FUNCT                        3'b001
+`define INST_CSRRWI_FUNCT                       3'b101
+`define INST_CSRRS_FUNCT                        3'b010
+`define INST_CSRRSI_FUNCT                       3'b110
+`define INST_CSRRC_FUNCT                        3'b011
+`define INST_CSRRCI_FUNCT                       3'b111
+
+//--------------------------------------------------------------------
+// CSR Registers
+//--------------------------------------------------------------------
+// for machine level
+`define CSR_MSTATUS_ADDR                        12'h300
+`define CSR_MISA_ADDR                           12'h301
+`define CSR_MEDELEG_ADDR                        12'h302
+`define CSR_MIDELEG_ADDR                        12'h303
+`define CSR_MIE_ADDR                            12'h304
+`define CSR_MTVEC_ADDR                          12'h305
+`define CSR_MCOUNTEREN_ADDR                     12'h306
+`define CSR_MSTATUSH_ADDR                       12'h310
+
+`define CSR_MSTATUS_ADDR                        12'h300
+
+
