@@ -29,7 +29,9 @@ module fwd (
         input [31:0]  wb_rd_val;
 
         // not load instruction
-        if (mem_reg_write && mem_rd_addr == ex_rs_addr) 
+        if (ex_rs_addr == 5'b0) // when zero register
+            forward = 32'b0;
+        else if (mem_reg_write && mem_rd_addr == ex_rs_addr) 
             forward = mem_rd_val;
         else if (wb_rd_addr == ex_rs_addr)  
             forward = wb_rd_val;
