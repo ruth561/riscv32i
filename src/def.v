@@ -96,3 +96,9 @@
 `define CSR_MTVEC_ADDR                          12'h305
 `define CSR_MCOUNTEREN_ADDR                     12'h306
 `define CSR_MSTATUSH_ADDR                       12'h310
+
+`define CSR_MVENDORID_ADDR                      12'hf14
+`define CSR_MARCHID_ADDR                        12'hf14
+`define CSR_MIMPID_ADDR                         12'hf14
+`define CSR_MHARTID_ADDR                        12'hf14
+`define CSR_MCONFIGPTR_ADDR                     12'hf14

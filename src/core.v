@@ -18,6 +18,7 @@ module core #(
     // for debug
     wire [31:0]  debug_ra;
     wire [31:0]  debug_sp;
+    wire [31:0]  debug_gp;
     wire [31:0]  debug_t0;
     wire [31:0]  debug_t1;
     wire [31:0]  debug_t2;
@@ -183,6 +184,7 @@ module core #(
 
         .debug_ra   (debug_ra),
         .debug_sp   (debug_sp),
+        .debug_gp   (debug_gp),
         .debug_t0   (debug_t0),
         .debug_t1   (debug_t1),
         .debug_t2   (debug_t2),
@@ -356,24 +358,26 @@ module core #(
     reg [31:0] i, j;
     always @(posedge clock) begin // debug
         // timing is shifted from PC increment
-        $display("----- %d -----", timer);
-        $display("pc        : %x --> %b (%x)", pc, imem[pc >> 2], imem[pc >> 2]);
-        $display("ra        : %x", debug_ra);
-        $display("sp        : %x", debug_sp);
-        $display("t0        : %x", debug_t0);
-        $display("t1        : %x", debug_t1);
-        $display("t2        : %x", debug_t2);
-        $display("a0        : %x", debug_a0);
-        $display("a1        : %x", debug_a1);
-        $display("mstatus   : %x", debug_mstatus);
-        $display("misa      : %x", debug_misa);
-        $display("");
-        $display("[data memory dump]");
-        for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin
-            $display("%x: %x %x %x %x %x %x %x %x", (i << 3), 
-                dmem[(i << 3)], dmem[(i << 3) + 1], dmem[(i << 3) + 2], dmem[(i << 3) + 3], 
-                dmem[(i << 3) + 4], dmem[(i << 3) + 5], dmem[(i << 3) + 6], dmem[(i << 3) + 7]);
-        end
+        // $display("----- %d -----", timer);
+        $display("pc        : %x --> %b (%x)  | gp = %d", 
+            pc, imem[pc >> 2], imem[pc >> 2], debug_gp);
+        // $display("ra        : %x", debug_ra);
+        // $display("sp        : %x", debug_sp);
+        // $display("gp        : %x", debug_gp);
+        // $display("t0        : %x", debug_t0);
+        // $display("t1        : %x", debug_t1);
+        // $display("t2        : %x", debug_t2);
+        // $display("a0        : %x", debug_a0);
+        // $display("a1        : %x", debug_a1);
+        // $display("mstatus   : %x", debug_mstatus);
+        // $display("misa      : %x", debug_misa);
+        // $display("");
+        // $display("[data memory dump]");
+        // for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin
+        //     $display("%x: %x %x %x %x %x %x %x %x", (i << 3), 
+        //         dmem[(i << 3)], dmem[(i << 3) + 1], dmem[(i << 3) + 2], dmem[(i << 3) + 3], 
+        //         dmem[(i << 3) + 4], dmem[(i << 3) + 5], dmem[(i << 3) + 6], dmem[(i << 3) + 7]);
+        // end
         timer = timer + 1;
     end
 

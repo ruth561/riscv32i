@@ -34,6 +34,7 @@ module csr_regfile (
         for (i = 0; i < 4095; i++) csrs[i] <= i;
         csrs[`CSR_MSTATUS_ADDR] <= 32'hdeadbeef;
         csrs[`CSR_MISA_ADDR]    <= 32'hcafebabe;
+        csrs[`CSR_MHARTID_ADDR] <= 32'h00000000;
     end
 
 endmodule

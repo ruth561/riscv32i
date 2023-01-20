@@ -13,6 +13,7 @@ module regfile (
     // for debug
     output [31:0]   debug_ra, 
     output [31:0]   debug_sp, 
+    output [31:0]   debug_gp, 
     output [31:0]   debug_t0, 
     output [31:0]   debug_t1, 
     output [31:0]   debug_t2, 
@@ -28,6 +29,7 @@ module regfile (
     // for debug
     assign debug_ra = regs[1];
     assign debug_sp = regs[2];
+    assign debug_gp = regs[3];
     assign debug_t0 = regs[5];
     assign debug_t1 = regs[6];
     assign debug_t2 = regs[7];
