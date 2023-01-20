@@ -27,10 +27,10 @@ test_s:
 	build/top_pipeline
 	gtkwave build/dump.vcd
 
-.PHONY: test-add
-test-add:
-	riscv32-unknown-linux-gnu-objdump -d $(riscv-tests-dir)/rv32ui-p-add > build/testi.dump
-	riscv32-unknown-linux-gnu-objcopy -O binary $(riscv-tests-dir)/rv32ui-p-add build/rv32ui-p-add
-	xxd -e -c 4 build/rv32ui-p-add | cut -d ' ' -f 2 > build/testi.txt
+.PHONY: test-%
+test-%: $(riscv-tests-dir)/rv32ui-p-%
+	riscv32-unknown-linux-gnu-objdump -d $< > build/testi.dump
+	riscv32-unknown-linux-gnu-objcopy -O binary $< build/tmp
+	xxd -e -c 4 build/tmp | cut -d ' ' -f 2 > build/testi.txt
 	iverilog -o build/top_pipeline -Isrc src/top_pipeline.v
 	build/top_pipeline
