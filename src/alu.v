@@ -21,7 +21,7 @@ module alu (
             `ALU_XOR:    alu_core = src1 ^ src2;
             `ALU_SLL:    alu_core = src1 << src2[4:0];
             `ALU_SRL:    alu_core = src1 >> src2[4:0];
-            `ALU_SRA:    alu_core = $signed(src1) >> src2[4:0];
+            `ALU_SRA:    alu_core = $signed(src1) >>> $signed(src2[4:0]);
             `ALU_SEQ:    alu_core = src1 == src2;                   // Set EQual
             `ALU_SNE:    alu_core = src1 != src2;                   // Set Not Equal
             `ALU_SLT:    alu_core = $signed(src1) < $signed(src2);  // Set Less Than
