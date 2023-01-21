@@ -12,14 +12,22 @@ module csr_regfile (
     output wire [31:0]  csr_r_val,
 
     output wire [31:0]  debug_mstatus, 
-    output wire [31:0]  debug_misa 
+    output wire [31:0]  debug_mtvec,  
+    output wire [31:0]  debug_mie,  
+    output wire [31:0]  debug_mip,  
+    output wire [31:0]  debug_mepc,  
+    output wire [31:0]  debug_mcause
 );
 
     reg [31:0] csrs [0:4095];
     
     // for debug
-    assign debug_mstatus = csrs[`CSR_MSTATUS_ADDR];
-    assign debug_misa    = csrs[`CSR_MISA_ADDR];
+    assign debug_mstatus    = csrs[`CSR_MSTATUS_ADDR];
+    assign debug_mtvec      = csrs[`CSR_MTVEC_ADDR];
+    assign debug_mie        = csrs[`CSR_MIE_ADDR];
+    assign debug_mip        = csrs[`CSR_MIP_ADDR];
+    assign debug_mepc       = csrs[`CSR_MEPC_ADDR];
+    assign debug_mcause     = csrs[`CSR_MCAUSE_ADDR];
 
     assign csr_r_val = w_enable && csr_w_addr == csr_r_addr ? csr_w_val : csrs[csr_r_addr];
 

@@ -49,6 +49,7 @@
 // INSTRUCTION FUNCTION
 //--------------------------------------------------------------------
 `define INST_NOP                                32'h00000013
+`define INST_ECALL                              32'b00000073
 
 `define INST_ADD_FUNCT                          10'b0000000000
 `define INST_SUB_FUNCT                          10'b0100000000
@@ -87,7 +88,14 @@
 //--------------------------------------------------------------------
 // CSR Registers
 //--------------------------------------------------------------------
-// for machine level
+// Machine Information Registers
+`define CSR_MVENDORID_ADDR                      12'hf14
+`define CSR_MARCHID_ADDR                        12'hf14
+`define CSR_MIMPID_ADDR                         12'hf14
+`define CSR_MHARTID_ADDR                        12'hf14
+`define CSR_MCONFIGPTR_ADDR                     12'hf14
+
+// Machine Trap Setup
 `define CSR_MSTATUS_ADDR                        12'h300
 `define CSR_MISA_ADDR                           12'h301
 `define CSR_MEDELEG_ADDR                        12'h302
@@ -97,8 +105,11 @@
 `define CSR_MCOUNTEREN_ADDR                     12'h306
 `define CSR_MSTATUSH_ADDR                       12'h310
 
-`define CSR_MVENDORID_ADDR                      12'hf14
-`define CSR_MARCHID_ADDR                        12'hf14
-`define CSR_MIMPID_ADDR                         12'hf14
-`define CSR_MHARTID_ADDR                        12'hf14
-`define CSR_MCONFIGPTR_ADDR                     12'hf14
+// for Machine Trap Handling
+`define CSR_MSCRATCH_ADDR                       12'h340
+`define CSR_MEPC_ADDR                           12'h341
+`define CSR_MCAUSE_ADDR                         12'h342
+`define CSR_MTVAL_ADDR                          12'h343
+`define CSR_MIP_ADDR                            12'h344
+`define CSR_MINST_ADDR                          12'h34a
+`define CSR_MTVAL12_ADDR                        12'h34b

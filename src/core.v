@@ -26,7 +26,11 @@ module core #(
     wire [31:0]  debug_a1;
 
     wire [31:0]  debug_mstatus;
-    wire [31:0]  debug_misa;
+    wire [31:0]  debug_mtvec; 
+    wire [31:0]  debug_mie; 
+    wire [31:0]  debug_mip; 
+    wire [31:0]  debug_mepc; 
+    wire [31:0]  debug_mcause;
 
     reg  [31:0]  imem [0:(IMEM_SIZE >> 2) - 1]; // instruction memory
     reg  [ 7:0]  dmem [0:DMEM_SIZE - 1]; // data memory
@@ -204,7 +208,11 @@ module core #(
         .csr_r_val  (id_csr_val), 
 
         .debug_mstatus  (debug_mstatus), 
-        .debug_misa     (debug_misa) 
+        .debug_mtvec    (debug_mtvec), 
+        .debug_mie      (debug_mie), 
+        .debug_mip      (debug_mip), 
+        .debug_mepc     (debug_mepc), 
+        .debug_mcause   (debug_mcause)
     );
 
     always @(posedge clock) begin
@@ -361,16 +369,20 @@ module core #(
         // $display("----- %d -----", timer);
         $display("pc        : %x --> %b (%x)  | gp = %d", 
             pc, imem[pc >> 2], imem[pc >> 2], debug_gp);
-        // $display("ra        : %x", debug_ra);
-        // $display("sp        : %x", debug_sp);
-        // $display("gp        : %x", debug_gp);
-        // $display("t0        : %x", debug_t0);
-        // $display("t1        : %x", debug_t1);
-        // $display("t2        : %x", debug_t2);
-        // $display("a0        : %x", debug_a0);
-        // $display("a1        : %x", debug_a1);
-        // $display("mstatus   : %x", debug_mstatus);
-        // $display("misa      : %x", debug_misa);
+        $display("ra        : %x", debug_ra);
+        $display("sp        : %x", debug_sp);
+        $display("gp        : %x", debug_gp);
+        $display("t0        : %x", debug_t0);
+        $display("t1        : %x", debug_t1);
+        $display("t2        : %x", debug_t2);
+        $display("a0        : %x", debug_a0);
+        $display("a1        : %x", debug_a1);
+        $display("mstatus   : %x", debug_mstatus);
+        $display("mtvec     : %x", debug_mtvec);
+        $display("mie       : %x", debug_mie);
+        $display("mip       : %x", debug_mip);
+        $display("mepc      : %x", debug_mepc);
+        $display("mcause    : %x", debug_mcause);
         // $display("");
         // $display("[data memory dump]");
         // for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin
