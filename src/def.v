@@ -49,7 +49,7 @@
 // INSTRUCTION FUNCTION
 //--------------------------------------------------------------------
 `define INST_NOP                                32'h00000013
-`define INST_ECALL                              32'b00000073
+`define INST_ECALL                              32'h00000073
 
 `define INST_ADD_FUNCT                          10'b0000000000
 `define INST_SUB_FUNCT                          10'b0100000000

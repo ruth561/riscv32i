@@ -35,6 +35,8 @@ module core #(
     reg  [31:0]  imem [0:(IMEM_SIZE >> 2) - 1]; // instruction memory
     reg  [ 7:0]  dmem [0:DMEM_SIZE - 1]; // data memory
 
+    wire [31:0]  csr_mtvec; 
+
     // ====================   IF   ====================
     // IF/ID PIPELINE REGS
     reg  [31:0]  if_id_pc;
@@ -88,6 +90,8 @@ module core #(
     reg          id_ex_alu_src;
     reg          id_ex_reg_write;
     reg  [31:0]  id_ex_imm;
+    reg          id_ex_exception_asserted;
+    reg  [31:0]  id_ex_exception_mcause;
 
     // ====================   EX   ====================
     // wires into EX/MEM
@@ -127,7 +131,10 @@ module core #(
     //-------------------------------------------------
     always @(posedge clock) begin
         if (branch_misprediction) begin
-            if_id_pc    <= pc;
+            if_id_pc    <= 32'b0;
+            if_id_instr <= `INST_NOP;
+        end else if (id_ex_exception_asserted) begin
+            if_id_pc    <= 32'b0;
             if_id_instr <= `INST_NOP;
         end else if (stall) begin
             if_id_pc    <= if_id_pc;
@@ -140,10 +147,11 @@ module core #(
             if_id_instr <= imem[pc >> 2];
         end
 
-        if (branch_misprediction)   pc <= ex_mem_branch_addr;
-        else if (stall)             pc <= pc;
-        else if (id_jal)            pc <= if_id_pc + id_imm;
-        else                        pc <= pc + 4;
+        if (branch_misprediction)           pc <= ex_mem_branch_addr;
+        else if (id_ex_exception_asserted)  pc <= csr_mtvec;
+        else if (stall)                     pc <= pc;
+        else if (id_jal)                    pc <= if_id_pc + id_imm;
+        else                                pc <= pc + 4;
     end
 
     //-------------------------------------------------
@@ -205,7 +213,12 @@ module core #(
         .csr_w_val  (ex_csr_result),
         .w_enable   (id_ex_csr),
 
+        .exception_asserted (id_ex_exception_asserted),
+        .exception_mepc     (id_ex_pc),
+        .exception_mcause   (id_ex_exception_mcause),
+
         .csr_r_val  (id_csr_val), 
+        .mtvec      (csr_mtvec),
 
         .debug_mstatus  (debug_mstatus), 
         .debug_mtvec    (debug_mtvec), 
@@ -228,7 +241,7 @@ module core #(
         id_ex_imm       <= id_imm;
 
         // for control bit
-        if (branch_misprediction || stall) begin
+        if (branch_misprediction || stall || id_ex_exception_asserted) begin
             id_ex_jal       <= `FALSE;
             id_ex_jalr      <= `FALSE;
             id_ex_branch    <= `FALSE;
@@ -240,6 +253,8 @@ module core #(
             id_ex_alu_op    <= `ALU_NONE;
             id_ex_alu_src   <= `FALSE;
             id_ex_reg_write <= `FALSE;
+            id_ex_exception_asserted    <= `FALSE;
+            id_ex_exception_mcause      <= 32'b0;
         end else begin
             id_ex_jal       <= id_jal;
             id_ex_jalr      <= id_jalr;
@@ -252,6 +267,13 @@ module core #(
             id_ex_alu_op    <= id_alu_op;
             id_ex_alu_src   <= id_alu_src;
             id_ex_reg_write <= id_reg_write;
+            if (if_id_instr == `INST_ECALL) begin
+                id_ex_exception_asserted    <= `TRUE;
+                id_ex_exception_mcause      <= 32'd11;
+            end else begin
+                id_ex_exception_asserted    <= `FALSE;
+                id_ex_exception_mcause      <= 32'd0;
+            end
         end
     end
 
@@ -298,7 +320,7 @@ module core #(
         ex_mem_rd_addr      <= id_ex_rd_addr;
 
         // for control bit
-        if (branch_misprediction) begin
+        if (branch_misprediction || id_ex_exception_asserted) begin
             ex_mem_jal          <= `FALSE;
             ex_mem_jalr         <= `FALSE;
             ex_mem_branch       <= `FALSE;

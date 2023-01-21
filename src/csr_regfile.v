@@ -9,8 +9,14 @@ module csr_regfile (
     input  wire [31:0]  csr_w_val,
     input  wire         w_enable,
 
-    output wire [31:0]  csr_r_val,
+    input  wire         exception_asserted,
+    input  wire [31:0]  exception_mepc,
+    input  wire [31:0]  exception_mcause,
 
+    output wire [31:0]  csr_r_val,
+    output wire [31:0]  mtvec,
+
+    // for debug
     output wire [31:0]  debug_mstatus, 
     output wire [31:0]  debug_mtvec,  
     output wire [31:0]  debug_mie,  
@@ -30,9 +36,17 @@ module csr_regfile (
     assign debug_mcause     = csrs[`CSR_MCAUSE_ADDR];
 
     assign csr_r_val = w_enable && csr_w_addr == csr_r_addr ? csr_w_val : csrs[csr_r_addr];
-
+    assign mtvec            = csrs[`CSR_MTVEC_ADDR];
+    
     always @(posedge clock) begin
         if (w_enable) csrs[csr_w_addr]  <= csr_w_val;
+    end
+
+    always @(posedge clock) begin
+        if (exception_asserted) begin
+            csrs[`CSR_MEPC_ADDR]    <= exception_mepc;
+            csrs[`CSR_MCAUSE_ADDR]  <= exception_mcause;
+        end
     end
 
     // set instructions in imem.
