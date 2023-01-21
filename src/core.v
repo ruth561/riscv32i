@@ -9,9 +9,15 @@ module core #(
     parameter   DMEM_SIZE = 1 << 12, 
     parameter   IMEM_SIZE = 1 << 12
 ) (
-    input  wire     clock,
-    input  wire     reset
+    input  wire         clock,
+    input  wire         reset, 
+
+    output wire [31:0]  gp,
+    output wire         exit
 );
+    // to imform test-bench that riscv-test has finished.
+    assign exit = pc == 32'h44;
+    assign gp   = debug_gp;
 
     reg [31:0] pc;
 
@@ -455,13 +461,13 @@ module core #(
         $display("mip       : %x", debug_mip);
         $display("mepc      : %x", debug_mepc);
         $display("mcause    : %x", debug_mcause);
-        // $display("");
-        // $display("[data memory dump]");
-        // for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin
-        //     $display("%x: %x %x %x %x %x %x %x %x", (i << 3), 
-        //         dmem[(i << 3)], dmem[(i << 3) + 1], dmem[(i << 3) + 2], dmem[(i << 3) + 3], 
-        //         dmem[(i << 3) + 4], dmem[(i << 3) + 5], dmem[(i << 3) + 6], dmem[(i << 3) + 7]);
-        // end
+        $display("");
+        $display("[data memory dump]");
+        for (i = (DMEM_SIZE >> 3) - 4; i < DMEM_SIZE >> 3; i++) begin
+            $display("%x: %x %x %x %x %x %x %x %x", (i << 3), 
+                dmem[(i << 3)], dmem[(i << 3) + 1], dmem[(i << 3) + 2], dmem[(i << 3) + 3], 
+                dmem[(i << 3) + 4], dmem[(i << 3) + 5], dmem[(i << 3) + 6], dmem[(i << 3) + 7]);
+        end
         timer = timer + 1;
     end
 
