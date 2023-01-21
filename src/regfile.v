@@ -14,11 +14,37 @@ module regfile (
     output [31:0]   debug_ra, 
     output [31:0]   debug_sp, 
     output [31:0]   debug_gp, 
+    output [31:0]   debug_tp, 
+    
     output [31:0]   debug_t0, 
     output [31:0]   debug_t1, 
     output [31:0]   debug_t2, 
+    output [31:0]   debug_t3, 
+    output [31:0]   debug_t4, 
+    output [31:0]   debug_t5, 
+    output [31:0]   debug_t6,
+
     output [31:0]   debug_a0, 
-    output [31:0]   debug_a1
+    output [31:0]   debug_a1,
+    output [31:0]   debug_a2,
+    output [31:0]   debug_a3,
+    output [31:0]   debug_a4,
+    output [31:0]   debug_a5,
+    output [31:0]   debug_a6,
+    output [31:0]   debug_a7,
+
+    output [31:0]   debug_s0, 
+    output [31:0]   debug_s1, 
+    output [31:0]   debug_s2, 
+    output [31:0]   debug_s3, 
+    output [31:0]   debug_s4, 
+    output [31:0]   debug_s5, 
+    output [31:0]   debug_s6, 
+    output [31:0]   debug_s7, 
+    output [31:0]   debug_s8, 
+    output [31:0]   debug_s9, 
+    output [31:0]   debug_s10, 
+    output [31:0]   debug_s11 
 );
 
     reg [31:0] regs [0:31];
@@ -27,14 +53,37 @@ module regfile (
     assign rs2_val = rs2_addr == 5'b0 ? 32'b0 : (rs2_addr == rd_addr ? w_val : regs[rs2_addr]);
 
     // for debug
-    assign debug_ra = regs[1];
-    assign debug_sp = regs[2];
-    assign debug_gp = regs[3];
-    assign debug_t0 = regs[5];
-    assign debug_t1 = regs[6];
-    assign debug_t2 = regs[7];
-    assign debug_a0 = regs[10];
-    assign debug_a1 = regs[11];
+    assign debug_ra     = regs[ 1];
+    assign debug_sp     = regs[ 2];
+    assign debug_gp     = regs[ 3];
+    assign debug_tp     = regs[ 4];
+    assign debug_t0     = regs[ 5];
+    assign debug_t1     = regs[ 6];
+    assign debug_t2     = regs[ 7];
+    assign debug_s0     = regs[ 8];
+    assign debug_s1     = regs[ 9];
+    assign debug_a0     = regs[10];
+    assign debug_a1     = regs[11];
+    assign debug_a2     = regs[12];
+    assign debug_a3     = regs[13];
+    assign debug_a4     = regs[14];
+    assign debug_a5     = regs[15];
+    assign debug_a6     = regs[16];
+    assign debug_a7     = regs[17];
+    assign debug_s2     = regs[18];
+    assign debug_s3     = regs[19];
+    assign debug_s4     = regs[20];
+    assign debug_s5     = regs[21];
+    assign debug_s6     = regs[22];
+    assign debug_s7     = regs[23];
+    assign debug_s8     = regs[24];
+    assign debug_s9     = regs[25];
+    assign debug_s10    = regs[26];
+    assign debug_s11    = regs[27];
+    assign debug_t3     = regs[28];
+    assign debug_t4     = regs[29];
+    assign debug_t5     = regs[30];
+    assign debug_t6     = regs[31];
 
     // If reset is asserted, all registers are 0-cleared.
     // If it isn't, write back is always done. 

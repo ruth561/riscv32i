@@ -16,14 +16,37 @@ module core #(
     reg [31:0] pc;
 
     // for debug
-    wire [31:0]  debug_ra;
-    wire [31:0]  debug_sp;
-    wire [31:0]  debug_gp;
-    wire [31:0]  debug_t0;
-    wire [31:0]  debug_t1;
-    wire [31:0]  debug_t2;
-    wire [31:0]  debug_a0;
-    wire [31:0]  debug_a1;
+    wire [31:0]   debug_ra; 
+    wire [31:0]   debug_sp; 
+    wire [31:0]   debug_gp; 
+    wire [31:0]   debug_tp; 
+    wire [31:0]   debug_t0; 
+    wire [31:0]   debug_t1; 
+    wire [31:0]   debug_t2; 
+    wire [31:0]   debug_t3; 
+    wire [31:0]   debug_t4; 
+    wire [31:0]   debug_t5; 
+    wire [31:0]   debug_t6;
+    wire [31:0]   debug_a0; 
+    wire [31:0]   debug_a1;
+    wire [31:0]   debug_a2;
+    wire [31:0]   debug_a3;
+    wire [31:0]   debug_a4;
+    wire [31:0]   debug_a5;
+    wire [31:0]   debug_a6;
+    wire [31:0]   debug_a7;
+    wire [31:0]   debug_s0; 
+    wire [31:0]   debug_s1; 
+    wire [31:0]   debug_s2; 
+    wire [31:0]   debug_s3; 
+    wire [31:0]   debug_s4; 
+    wire [31:0]   debug_s5; 
+    wire [31:0]   debug_s6; 
+    wire [31:0]   debug_s7; 
+    wire [31:0]   debug_s8; 
+    wire [31:0]   debug_s9; 
+    wire [31:0]   debug_s10; 
+    wire [31:0]   debug_s11;
 
     wire [31:0]  debug_mstatus;
     wire [31:0]  debug_mtvec; 
@@ -197,11 +220,36 @@ module core #(
         .debug_ra   (debug_ra),
         .debug_sp   (debug_sp),
         .debug_gp   (debug_gp),
+        .debug_tp   (debug_tp),
         .debug_t0   (debug_t0),
         .debug_t1   (debug_t1),
         .debug_t2   (debug_t2),
+        .debug_t3   (debug_t3),
+        .debug_t4   (debug_t4),
+        .debug_t5   (debug_t5),
+        .debug_t6   (debug_t6),
+
         .debug_a0   (debug_a0),
-        .debug_a1   (debug_a1)
+        .debug_a1   (debug_a1),
+        .debug_a2   (debug_a2),
+        .debug_a3   (debug_a3),
+        .debug_a4   (debug_a4),
+        .debug_a5   (debug_a5),
+        .debug_a6   (debug_a6),
+        .debug_a7   (debug_a7),
+
+        .debug_s0   (debug_s0),
+        .debug_s1   (debug_s1),
+        .debug_s2   (debug_s2),
+        .debug_s3   (debug_s3),
+        .debug_s4   (debug_s4),
+        .debug_s5   (debug_s5),
+        .debug_s6   (debug_s6),
+        .debug_s7   (debug_s7),
+        .debug_s8   (debug_s8),
+        .debug_s9   (debug_s9),
+        .debug_s10  (debug_s10),
+        .debug_s11  (debug_s11)
     );
 
     csr_regfile _csr_regfile (
@@ -391,14 +439,16 @@ module core #(
         // $display("----- %d -----", timer);
         $display("pc        : %x --> %b (%x)  | gp = %d", 
             pc, imem[pc >> 2], imem[pc >> 2], debug_gp);
-        $display("ra        : %x", debug_ra);
-        $display("sp        : %x", debug_sp);
-        $display("gp        : %x", debug_gp);
-        $display("t0        : %x", debug_t0);
-        $display("t1        : %x", debug_t1);
-        $display("t2        : %x", debug_t2);
-        $display("a0        : %x", debug_a0);
-        $display("a1        : %x", debug_a1);
+        $display("ra: %x,    sp: %x,    gp: %x,    tp: %x, ", debug_ra, debug_sp, debug_gp, debug_tp);
+        $display("t0: %x,    t1: %x,    t2: %x,    t3: %x,    t4: %x,    t5: %x,    t6: %x,", 
+            debug_t0, debug_t1, debug_t2, debug_t3, debug_t4, debug_t5, debug_t6);
+        $display("a0: %x,    a1: %x,    a2: %x,    a3: %x,    a4: %x,    a5: %x,    a6: %x,    a7: %x,", 
+            debug_a0, debug_a1, debug_a2, debug_a3, debug_a4, debug_a5, debug_a6, debug_a7);
+        $display("s0: %x,    s1: %x,    s2: %x,    s3: %x,    s4: %x,    s5: %x,", 
+            debug_s0, debug_s1, debug_s2, debug_s3, debug_s4, debug_s5);
+        $display("s6: %x,    s7: %x,    s8: %x,    s9: %x,    s10:%x,    s11:%x,", 
+            debug_s6, debug_s7, debug_s8, debug_s9, debug_s10, debug_s11);
+
         $display("mstatus   : %x", debug_mstatus);
         $display("mtvec     : %x", debug_mtvec);
         $display("mie       : %x", debug_mie);
